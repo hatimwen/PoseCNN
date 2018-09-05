@@ -1,4 +1,5 @@
 import rosbag
+from cv_bridge import CvBridge, CvBridgeError
 import inspect
 
 
@@ -18,7 +19,7 @@ def extract_box_position(bag, measurement_time_secs, measurement_time_nsecs, top
                     return tf_msg
 
 
-def get_points_to_backproject_in_box_corner_tracker_frame(box_dimensions):
+# def get_points_to_backproject_in_box_corner_tracker_frame(box_dimensions):
 
 
 
@@ -35,11 +36,14 @@ def main():
               "/camera2/color/image_raw", "/camera2/aligned_depth_to_color/camera_info",
               "/camera2/aligned_depth_to_color/image_raw"]
     box_position_msg = extract_box_position(bag, 1535537356, 262816, topics)
+    bridge = CvBridge()
     print(box_position_msg)
-    # for topic, msg, t in bag.read_messages(topics=topics):
-    #     if topic == "/tf":
-    #         print(topic, msg, t)
-    #     # break
+    for topic, msg, t in bag.read_messages(topics=topics):
+        cv_image = bridge.imgmsg_to_cv2(image_message, desired_encoding="passthrough")
+        print(topic)
+        # if topic == "/tf":
+        #     print(topic, msg, t)
+        # break
 
 
 if __name__ == "__main__":

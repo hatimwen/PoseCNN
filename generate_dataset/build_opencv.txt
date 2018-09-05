@@ -1,0 +1,1 @@
+cmake -DPYTHON_EXECUTABLE=/home/satco/envs/python3.6/bin/python3.6 -DPYTHON_INCLUDE_DIR=/home/satco/envs/python3.6/include/python3.6m -DPYTHON_LIBRARY=/home/satco/envs/python3.6/lib/python3.6/config-3.6m-x86_64-linux-gnulibpython3.6m.a ..
