@@ -24,4 +24,5 @@ lib/kinect_fusion/build/
 lib/nms/gpu_nms.cpp
 lib/normals/gpu_normals.cpp
 lib/synthesize/build/
-
+bag/
+generate_dataset/data/

@@ -1,0 +1,5 @@
+follow: https://archive.is/2MzVS
+install mentioned dependencies and oiio branch R1.8(later won't work atleast master didn't) and cmake 3.6 is needed 3.5 won't work because 3.5 FindBoost.cmake is
+too old to find boost 1.58 correctly, even thought they got bundled together...
+add with cmake-gui
+cmake -DWITH_PYTHON_INSTALL=OFF -DWITH_PLAYER=OFF -DWITH_PYTHON_MODULE=ON ..
