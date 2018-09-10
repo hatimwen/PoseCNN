@@ -1,5 +1,19 @@
 import bpy
 import ast
+import time
+
+
+class Timer(object):  # pragma: no cover
+    def __init__(self, name=None):
+        self.name = name
+
+    def __enter__(self):
+        self.tstart = time.time()
+
+    def __exit__(self, type, value, traceback):
+        if self.name:
+            print('[%s]' % self.name,)
+        print('Elapsed: %s' % (time.time() - self.tstart))
 
 
 # size (x,y,z) location (x,y,z)
@@ -9,14 +23,14 @@ def add_cube(size, location, quat, i):
                                             False, False, False, False, False, False, False, False, False))
     bpy.context.object.name = "Cube" + str(i)
     bpy.context.object.scale = size
+    bpy.context.object.rotation_mode = "QUATERNION"
+    bpy.context.object.rotation_quaternion = quat
     mat = create_new_material("Cube" + str(i) + "_mat", (0.1*i, 0, 0, 1))
     bpy.context.object.data.materials.append(mat)
 
 
 def set_camera(location, quat):
     camera = bpy.context.scene.camera
-    camera.scale = (1, 1, -1)
-    camera.rotation_mode = "QUATERNION"
     camera.location = location
     camera.rotation_quaternion = quat
 
@@ -34,7 +48,7 @@ def create_new_material(name, color):
     # add emission node
     node_emission = nodes.new(type='ShaderNodeEmission')
     node_emission.inputs[0].default_value = color  # color rgba
-    node_emission.inputs[1].default_value = 5.0  # strength
+    node_emission.inputs[1].default_value = 1.0  # strength
 
     node_output = nodes.new(type='ShaderNodeOutputMaterial')
     links = mat.node_tree.links
@@ -42,11 +56,42 @@ def create_new_material(name, color):
     return mat
 
 
-def setup_scene(box_positions):
+def setup_camera():
+    camera = bpy.context.scene.camera
+    camera.scale = (1, -1, -1)
+    camera.rotation_mode = "QUATERNION"
+    cam = bpy.data.cameras["Camera"]
+    cam.angle_x = 69.4
+    cam.angle_y = 42.5
+
+
+def setup_speedup():
+    # speed up
+    # bpy.context.scene.world.light_settings.samples = 1
+    # Big tiles better for GPU small better for CPU
+    bpy.data.scenes['Scene'].render.tile_x = 1024
+    bpy.data.scenes['Scene'].render.tile_y = 1024
+    bpy.context.scene.cycles.device = 'GPU'
+    bpy.context.user_preferences.addons['cycles'].preferences.compute_device_type = 'CUDA'
+    # CPU
+    bpy.context.user_preferences.addons['cycles'].preferences.devices[0].use = False
+    # GPU
+    bpy.context.user_preferences.addons['cycles'].preferences.devices[1].use = True
+
+
+def setup_scene():
+    # needed for rendering the whole cube with one color
     bpy.data.scenes['Scene'].render.engine = "CYCLES"
     bpy.context.scene.render.resolution_x = 640
     bpy.context.scene.render.resolution_y = 480
     bpy.context.scene.render.resolution_percentage = 100
+
+
+def setup(box_positions):
+    setup_camera()
+    setup_speedup()
+    setup_scene()
+
     objs = bpy.data.objects
     objs.remove(objs["Cube"], True)
     box_sizes = [(0.349, 0.213, 0.124)]
@@ -63,7 +108,7 @@ def list_to_tuples(l):
 
 # blender uses wxyz and ros xyzw
 def ros_to_blender_quat(qaut):
-    return (qaut[-1], qaut[0], qaut[1], qaut[1])
+    return (qaut[-1], qaut[0], qaut[1], qaut[2])
 
 
 def main():
@@ -73,14 +118,18 @@ def main():
     with open('data/box_positions.txt') as f:
         lines = f.readlines()
     box_positions = [ast.literal_eval(line) for line in lines]
-    setup_scene(box_positions)
+    setup(box_positions)
+    print(len(camera_positions))
 
     for i, camera_position in enumerate(camera_positions):
-        translation, quat_ros = list_to_tuples(camera_position)
-        quat = ros_to_blender_quat(quat_ros)
-        set_camera(translation, quat)
-        bpy.context.scene.render.filepath = "data/images/cube" + str(i) + ".png"
-        bpy.ops.render.render(use_viewport=True, write_still=True)
+        with Timer("Rendering"):
+            translation, quat_ros = list_to_tuples(camera_position)
+            quat = ros_to_blender_quat(quat_ros)
+            set_camera(translation, quat)
+            # print(translation)
+            # print(quat)
+            bpy.context.scene.render.filepath = "data/images/cube" + str(i) + ".png"
+            bpy.ops.render.render(use_viewport=True, write_still=True)
 
 
 if __name__ == "__main__":
