@@ -15,6 +15,7 @@ def add_cube(size, location, quat, i):
 
 def set_camera(location, quat):
     camera = bpy.context.scene.camera
+    camera.scale = (1, 1, -1)
     camera.rotation_mode = "QUATERNION"
     camera.location = location
     camera.rotation_quaternion = quat
@@ -48,14 +49,21 @@ def setup_scene(box_positions):
     bpy.context.scene.render.resolution_percentage = 100
     objs = bpy.data.objects
     objs.remove(objs["Cube"], True)
+    box_sizes = [(0.349, 0.213, 0.124)]
 
     for i, box_position in enumerate(box_positions):
-        translation, quat = list_to_tuples(box_position)
-        add_cube((0.2, 0.2, 0.2), translation, quat, i)
+        translation, quat_ros = list_to_tuples(box_position)
+        quat = ros_to_blender_quat(quat_ros)
+        add_cube(box_sizes[0], translation, quat, i)
 
 
 def list_to_tuples(l):
     return tuple(l[:3]), tuple(l[3:])
+
+
+# blender uses wxyz and ros xyzw
+def ros_to_blender_quat(qaut):
+    return (qaut[-1], qaut[0], qaut[1], qaut[1])
 
 
 def main():
@@ -68,13 +76,11 @@ def main():
     setup_scene(box_positions)
 
     for i, camera_position in enumerate(camera_positions):
-        translation, quat = list_to_tuples(camera_position)
+        translation, quat_ros = list_to_tuples(camera_position)
+        quat = ros_to_blender_quat(quat_ros)
         set_camera(translation, quat)
         bpy.context.scene.render.filepath = "data/images/cube" + str(i) + ".png"
         bpy.ops.render.render(use_viewport=True, write_still=True)
-
-    #
-    # obj = bpy.context.object["Cube"]
 
 
 if __name__ == "__main__":
