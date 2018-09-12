@@ -5,13 +5,17 @@ from cv_bridge import CvBridge
 
 
 def main():
-    bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/dataset_one_box.bag")
-    topics = ["/camera1/color/image_raw"]
-    counter = 0
+    bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/test.bag")
+    topics = ["/camera1/color/image_raw", "/camera2/color/image_raw"]
+    counter = -20
     bridge = CvBridge()
     for topic, msg, t in bag.read_messages(topics=topics, start_time=rospy.Time(1535537364, 810703)):
         if topic == "/camera1/color/image_raw":
-            print("Showing image " + str(counter))
+            print(msg.header.stamp)
+            if counter < 0:
+                counter += 1
+                continue
+            # print("Showing image " + str(counter))
             image = bridge.imgmsg_to_cv2(msg, "bgr8")
             mask_name = "data/images/cube" + str(counter) + ".png"
             mask = cv2.imread(mask_name)

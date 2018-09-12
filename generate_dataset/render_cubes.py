@@ -1,6 +1,7 @@
 import bpy
 import ast
 import time
+import math
 
 
 class Timer(object):  # pragma: no cover
@@ -61,8 +62,8 @@ def setup_camera():
     camera.scale = (1, -1, -1)
     camera.rotation_mode = "QUATERNION"
     cam = bpy.data.cameras["Camera"]
-    cam.angle_x = 69.4
-    cam.angle_y = 42.5
+    cam.angle_x = math.radians(69.4)
+    cam.angle_y = math.radians(42.5)
 
 
 def setup_speedup():
