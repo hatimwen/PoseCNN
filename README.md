@@ -25,8 +25,13 @@ If you find PoseCNN useful in your research, please consider citing:
 
 ### Installation
 
-1. Install [TensorFlow](https://www.tensorflow.org/get_started/os_setup) version r1.8 from source binaries won't work because of ABI incompatibilities.
-      1. Make a virtualenv with and add these packages, otherwise tf can not be build by source: pip install mock keras Cython easydict transforms3d(the last two are needed for later to actually run the demo)
+1. Install [TensorFlow](https://www.tensorflow.org/get_started/os_setup) version r1.8 from source binaries won't work 
+because of ABI incompatibilities.
+      1. You need **exactly** r1.8, gcc 4.8.*(tested with 4.8.5) and bazel 0.10.0 even though bazel 0.9.0 is recommended
+       [here](https://www.tensorflow.org/install/source), see 
+       [following issue](https://github.com/tensorflow/tensorflow/issues/22475). Bazel 0.17.0 also does not work and
+       probably other Bazel versions don't work either so really use 0.10.0 
+      2. Make a virtualenv with and add these packages, otherwise tf can not be build by source: pip install mock keras Cython easydict transforms3d(the last two are needed for later to actually run the demo)
 
 2. Download the VGG16 weights from [here](https://drive.google.com/open?id=1UdmOKrr9t4IetMubX-y-Pcn7AVaWJ2bL) (528M). Put the weight file vgg16.npy to $ROOT/data/imagenet_models.
 

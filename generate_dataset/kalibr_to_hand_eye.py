@@ -13,7 +13,7 @@ for line in lines:
     if "projection:" in line:
         projection = line.split("[")[1].split("]")[0].split()
         print(projection)
-output_path = os.path.join(base_path, "d415_hand_eye.yaml")
+output_path = os.path.join(base_path, "d435_hand_eye.yaml")
 
 output_str = """distortion:
   parameters:

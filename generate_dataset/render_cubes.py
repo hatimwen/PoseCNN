@@ -62,8 +62,8 @@ def setup_camera():
     camera.scale = (1, -1, -1)
     camera.rotation_mode = "QUATERNION"
     cam = bpy.data.cameras["Camera"]
-    cam.angle_x = math.radians(69.4)
-    cam.angle_y = math.radians(42.5)
+    cam.angle_x = math.radians(72.4)
+    cam.angle_y = math.radians(45.5)
 
 
 def setup_speedup():
@@ -95,12 +95,12 @@ def setup(box_positions):
 
     objs = bpy.data.objects
     objs.remove(objs["Cube"], True)
-    box_sizes = [(0.349, 0.213, 0.124)]
+    box_sizes = [(0.349, 0.213, 0.117)]
 
     for i, box_position in enumerate(box_positions):
         translation, quat_ros = list_to_tuples(box_position)
         quat = ros_to_blender_quat(quat_ros)
-        add_cube(box_sizes[0], translation, quat, i)
+        add_cube(box_sizes[i], translation, quat, i)
 
 
 def list_to_tuples(l):
@@ -109,7 +109,7 @@ def list_to_tuples(l):
 
 # blender uses wxyz and ros xyzw
 def ros_to_blender_quat(qaut):
-    return (qaut[-1], qaut[0], qaut[1], qaut[2])
+    return qaut[-1], qaut[0], qaut[1], qaut[2]
 
 
 def main():
@@ -121,10 +121,12 @@ def main():
     box_positions = [ast.literal_eval(line) for line in lines]
     setup(box_positions)
     print(len(camera_positions))
+    offset = (0.2, 0.55, 0.65)
 
     for i, camera_position in enumerate(camera_positions):
         with Timer("Rendering"):
             translation, quat_ros = list_to_tuples(camera_position)
+            translation = tuple([sum(x) for x in zip(translation, offset)])
             quat = ros_to_blender_quat(quat_ros)
             set_camera(translation, quat)
             # print(translation)
