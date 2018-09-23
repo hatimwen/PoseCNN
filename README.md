@@ -27,7 +27,7 @@ If you find PoseCNN useful in your research, please consider citing:
 
 1. Install [TensorFlow](https://www.tensorflow.org/get_started/os_setup) version r1.8 from source binaries won't work 
 because of ABI incompatibilities.
-      1. You need **exactly** r1.8, gcc 4.8.*(tested with 4.8.5) and bazel 0.10.0 even though bazel 0.9.0 is recommended
+      1. You need **exactly** r1.8, gcc 4.8.*(tested with 4.8.5, 6.3.* will not work) and bazel 0.10.0 even though bazel 0.9.0 is recommended
        [here](https://www.tensorflow.org/install/source), see 
        [following issue](https://github.com/tensorflow/tensorflow/issues/22475). Bazel 0.17.0 also does not work and
        probably other Bazel versions don't work either so really use 0.10.0 
@@ -39,18 +39,16 @@ because of ABI incompatibilities.
 
 4. Compile lib/kinect_fusion to be able to compile lib/synthesize. 
     1. Add nanoflann to the include dirs in cmake and sohpus to the include and link dirs
-    2. Downgrade cmake to version 3.6.0
-    3. Install Eigen 3.3.90
+    2. Comment /usr/local/cuda/include/crt/common_functions.h line 64: see [this issue](https://github.com/BVLC/caffe/issues/5994) 
     4. If Pangolin is already installed, reinstall Pangolin, since it will be pointing at the old eigen which has the cuda bug mentioned here: https://devtalk.nvidia.com/default/topic/1026622/cuda-programming-and-performance/nvcc-can-t-compile-code-that-uses-eigen/
-    5. Upgrade boost to 1.67.0 and move lib to /usr/lib/x86_64-linux-gnu and include boost the whole folder to /usr/include
     
 
 5. Compile lib/synthesize with cmake (optional). This package contains a few useful tools such as generating synthetic images for training and ICP.
 
-   Install dependencies:
+   Install dependencies with **exactly** these commits. I tried other commits and they all broke/did not build:
    - Python version 2.7, 3.X won't work
    - [Pangolin](https://github.com/stevenlovegrove/Pangolin) commit 1ec721d59ff6b799b9c24b8817f3b7ad2c929b83 worked for me, original author used c2a6ef524401945b493f14f8b5b8aa76cc7d71a9
-   - [Eigen](https://eigen.tuxfamily.org) 3.3.90
+   - [Eigen](https://eigen.tuxfamily.org) 3.3.* (tested with 3.3.0 and 3.3.90)
    - [boost](https://www.boost.org/) 1.67.0
    - [Sophus](https://github.com/strasdat/Sophus) commit ceb6380a1584b300e687feeeea8799353d48859f
    - [nanoflann](https://github.com/jlblancoc/nanoflann) commit ad7547f4e6beb1cdb3e360912fd2e352ef959465
@@ -69,8 +67,10 @@ because of ABI incompatibilities.
       add_definitions(-Wno-reorder)
       add_definitions(-Wno-deprecated-declarations)
    ```
-   4. Adapt boost_python and boost_numpy in Cmake line 98/99 to your library name when using boost and python 3.5 it is boost_python27 and boost_numpy27 or symlink these to boots_python and boost_numpy.
-   5. Create folder data and models under data/LOV and add or symlink the data and models into there
+   4. Make GlBuffer(const GlBuffer&) {} public in file /usr/local/include/pangolin/gl/gl.h by commenting line 209.
+   Same goes for line 116
+   5. Adapt boost_python and boost_numpy in Cmake line 98/99 to your library name when using boost and python 3.5 it is boost_python27 and boost_numpy27 or symlink these to boots_python and boost_numpy.
+   6. Create folder data and models under data/LOV and add or symlink the data and models into there
    
 ### Building
    1. Build kinect_fusion

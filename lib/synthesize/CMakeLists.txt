@@ -28,7 +28,7 @@ find_package(Eigen3 REQUIRED)
 find_package(PkgConfig REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(PCL REQUIRED)
-find_package(Boost 1.67.0 EXACT REQUIRED)
+# find_package(Boost 1.67.0 EXACT REQUIRED)
 pkg_check_modules(OpenEXR REQUIRED OpenEXR)
 
 find_package(OpenMP REQUIRED)
@@ -38,8 +38,11 @@ if (OPENMP_FOUND)
 endif()
 
 # HARD CODED
-set(Sophus_INCLUDE_DIRS "/home/satco/thesis/external_libraries_and_code/Sophus")
-set(Sophus_LIBRARY_DIRS "/home/satco/thesis/external_libraries_and_code/Sophus")
+set(Sophus_INCLUDE_DIRS "/home/satco/thesis/code/Sophus")
+set(Sophus_LIBRARY_DIRS "/home/satco/thesis/code/Sophus")
+
+set(BOOST_INCLUDE_DIRS "/home/satco/thesis/code/boost1.67_binaries/include")
+set(BOOST_LIBRARY_DIRS "/home/satco/thesis/code/boost1.67_binaries/lib")
 
 message("Project source dir: " ${PROJECT_SOURCE_DIR})
 set(xFusion_ROOT ${PROJECT_SOURCE_DIR}/../kinect_fusion)
