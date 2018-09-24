@@ -25,7 +25,7 @@ If you find PoseCNN useful in your research, please consider citing:
 
 ### Installation
 
-1. Install [TensorFlow](https://www.tensorflow.org/get_started/os_setup) version r1.8 from source binaries won't work 
+1. Install [TensorFlow](https://www.tensorflow.org/get_started/os_setup) version r1.8 from source, binaries won't work 
 because of ABI incompatibilities.
       1. You need **exactly** r1.8, gcc 4.8.*(tested with 4.8.5, 6.3.* will not work) and bazel 0.10.0 even though bazel 0.9.0 is recommended
        [here](https://www.tensorflow.org/install/source), see 
@@ -71,6 +71,15 @@ because of ABI incompatibilities.
    Same goes for line 116
    5. Adapt boost_python and boost_numpy in Cmake line 98/99 to your library name when using boost and python 3.5 it is boost_python27 and boost_numpy27 or symlink these to boots_python and boost_numpy.
    6. Create folder data and models under data/LOV and add or symlink the data and models into there
+   
+### Notes on ABI Compatibility
+Either all packages used need to be built with gcc 4.8.5 or if some use gcc 5 or above all above packages need following 
+line added to the compilation: -D_GLIBCXX_USE_CXX11_ABI=0  
+ABI Compatibility issues will manifest themselves through the message "some_lib.so": undefined symbol: "some obfuscated coed snippet".
+The easiest to get this whole project to compile is to compile every package with the same gcc version. But take care, because
+per default opencv will be compiled with gcc 5.4 and will get included in various binaries. Check and make sure you link
+against your custom built binaries using `ldd your_binary.so`. To give you the above error already at compile time instead of runtime
+add following to the compile command: `-Wl,-z,defs`. 
    
 ### Building
    1. Build kinect_fusion
