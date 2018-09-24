@@ -5,14 +5,14 @@ from cv_bridge import CvBridge
 
 
 def main():
-    # bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/dataset_one_box.bag")
-    bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/test.bag")
+    bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/dataset_one_box.bag")
+    # bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/test.bag")
     # topics = ["/camera1/color/image_raw", "/camera2/color/image_raw"]
     topics = ["/camera/color/image_raw"]
     # counter = -20
     counter = 0
     bridge = CvBridge()
-    for topic, msg, t in bag.read_messages(topics=topics, start_time=rospy.Time(1536832352, 412808)):
+    for topic, msg, t in bag.read_messages(topics=topics, start_time=rospy.Time(1537799716, 30952)):
         print(msg.header.stamp)
         # if topic == "/camera1/color/image_raw":
         if topic == "/camera/color/image_raw":
@@ -27,7 +27,7 @@ def main():
             alpha = 0.5
             image_with_mask = cv2.addWeighted(mask, alpha, image, 1 - alpha, 0)
             cv2.imshow("Image with mask", image_with_mask)
-            cv2.waitKey(1000)
+            cv2.waitKey(300)
             counter += 1
 
 

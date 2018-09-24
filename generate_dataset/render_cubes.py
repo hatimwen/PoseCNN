@@ -121,7 +121,8 @@ def main():
     box_positions = [ast.literal_eval(line) for line in lines]
     setup(box_positions)
     print(len(camera_positions))
-    offset = (0.2, 0.55, 0.65)
+    # offset = (0.2, 0.55, 0.65)
+    offset = (0, 0, 0)
 
     for i, camera_position in enumerate(camera_positions):
         with Timer("Rendering"):
