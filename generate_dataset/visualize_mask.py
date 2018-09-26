@@ -5,8 +5,8 @@ from cv_bridge import CvBridge
 
 
 def main():
-    bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/dataset_one_box.bag")
-    # bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/test.bag")
+    # bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/dataset_one_box.bag")
+    bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/test.bag")
     # topics = ["/camera1/color/image_raw", "/camera2/color/image_raw"]
     topics = ["/camera/color/image_raw"]
     # counter = -20
@@ -27,7 +27,7 @@ def main():
             alpha = 0.5
             image_with_mask = cv2.addWeighted(mask, alpha, image, 1 - alpha, 0)
             cv2.imshow("Image with mask", image_with_mask)
-            cv2.waitKey(300)
+            cv2.waitKey(50)
             counter += 1
 
 

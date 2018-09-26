@@ -30,12 +30,12 @@ def fill_transformer(bag):
 
 
 def main():
-    bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/dataset_one_box.bag")
-    # bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/test.bag")
+    # bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/dataset_one_box.bag")
+    bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/test.bag")
     # topics = ["/camera1/color/image_raw", "/camera2/color/image_raw"]
     topics = ["/camera/color/image_raw"]
     tf_t = fill_transformer(bag)
-    (trans, rot) = tf_t.lookupTransform("vicon", "box1", rospy.Time(1537799697, 297481))
+    (trans, rot) = tf_t.lookupTransform("vicon", "box11", rospy.Time(1537799697, 297481))
 
     with open("data/box_positions.txt", "w") as f:
         f.write(str(trans + rot) + "\n")
@@ -44,7 +44,7 @@ def main():
     timestamps = []
     timestamps2 = []
     for topic, msg, t in bag.read_messages(topics=topics, start_time=rospy.Time(1537799716, 30952)):
-        print(msg.header.stamp)
+        # print(msg.header.stamp)
         # if topic == "/camera1/color/image_raw":
         if topic == "/camera/color/image_raw":
             timestamps.append(msg.header.stamp)

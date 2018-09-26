@@ -26,8 +26,8 @@ def add_cube(size, location, quat, i):
     bpy.context.object.scale = size
     bpy.context.object.rotation_mode = "QUATERNION"
     bpy.context.object.rotation_quaternion = quat
-    mat = create_new_material("Cube" + str(i) + "_mat", (0.1*i, 0, 0, 1))
-    bpy.context.object.data.materials.append(mat)
+    # mat = create_new_material("Cube" + str(i) + "_mat", (0.1*i, 0, 0, 1))
+    # bpy.context.object.data.materials.append(mat)
 
 
 def set_camera(location, quat):
@@ -59,11 +59,28 @@ def create_new_material(name, color):
 
 def setup_camera():
     camera = bpy.context.scene.camera
+    # for this see https://blender.stackexchange.com/questions/118056/how-to-use-quaternions-coming-from-ros
     camera.scale = (1, -1, -1)
     camera.rotation_mode = "QUATERNION"
     cam = bpy.data.cameras["Camera"]
-    cam.angle_x = math.radians(72.4)
-    cam.angle_y = math.radians(45.5)
+    # this part sets the measured intrinsic calibration matrix K
+    # see https://blender.stackexchange.com/questions/883/how-to-set-a-principal-point-for-a-camera and
+    # https://blender.stackexchange.com/questions/58235/what-are-the-units-for-camera-shift for more information
+    # The principal point in pixels is 306.86169342 and 240.94547232 in pixels and the below in blender units, which are
+    # percentage of the biggest width in pixels. So shift_x of 1 will shift the principal point by 620 pixels, so will
+    # a shift_y of 1, so be cautious of this
+    cam.shift_x = -0.02052860403125001
+    # cam.shift_x = 0.02052860403125001
+    cam.shift_y = 0.0014773005000000001
+    cam.sensor_width = 32
+    print(cam.type)
+    # cam.lens = 610.55992534 / 640 * cam.sensor_width
+    cam.lens = 610.55992534 / 640 * 16
+    print(cam.sensor_width)
+    print(cam.lens)
+    exit()
+    # cam.angle_x = math.radians(72.4)
+    # cam.angle_y = math.radians(45.5)
 
 
 def setup_speedup():
@@ -82,7 +99,7 @@ def setup_speedup():
 
 def setup_scene():
     # needed for rendering the whole cube with one color
-    bpy.data.scenes['Scene'].render.engine = "CYCLES"
+    # bpy.data.scenes['Scene'].render.engine = "CYCLES"
     bpy.context.scene.render.resolution_x = 640
     bpy.context.scene.render.resolution_y = 480
     bpy.context.scene.render.resolution_percentage = 100
@@ -90,7 +107,7 @@ def setup_scene():
 
 def setup(box_positions):
     setup_camera()
-    setup_speedup()
+    # setup_speedup()
     setup_scene()
 
     objs = bpy.data.objects

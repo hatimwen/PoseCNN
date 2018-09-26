@@ -26,3 +26,6 @@ lib/normals/gpu_normals.cpp
 lib/synthesize/build/
 bag/
 generate_dataset/data/
+data/LOV/data/
+data/LOV/poses/
+data/LOV/models/

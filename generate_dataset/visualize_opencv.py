@@ -16,6 +16,8 @@ def get_corner(tf_t):
     for i in range(1, 9):
         (trans, rot) = tf_t.lookupTransform("vicon", "box_corner" + str(i), rospy.Time(1537799697, 297481))
         corner.append(list(trans))
+    (trans, rot) = tf_t.lookupTransform("vicon", "box11", rospy.Time(1537799697, 297481))
+    corner.append(list(trans))
     corners = np.float32(corner)
     return corners
 
@@ -40,11 +42,12 @@ def calculate_point_camera(name, K, corner):
 
 
 def main():
-    bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/dataset_one_box.bag")
+    # bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/dataset_one_box.bag")
+    bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/test.bag")
     topics = ["/camera/color/image_raw"]
     tf_t = fill_transformer(bag)
     corner_input = get_corner(tf_t)
-    print(corner_input)
+    # print(corner_input)
     camera_matrix = np.float32([[610.55992534, 0, 306.86169342], [0, 610.32086262, 240.94547232], [0, 0, 1]])
     dist = np.float32([[0.10793695], [-0.21546604], [0.00045875], [-0.00670819]])
     # dist = np.float32([[0], [0], [0], [0]])
