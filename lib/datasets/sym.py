@@ -112,7 +112,7 @@ class sym(datasets.imdb):
         """
         Load the indexes listed in this dataset's image set file.
         """
-        image_set_file = os.path.join(self._sym_path, 'train.txt')
+        image_set_file = os.path.join(self._sym_path, 'train_original.txt')
         assert os.path.exists(image_set_file), \
                 'Path does not exist: {}'.format(image_set_file)
 

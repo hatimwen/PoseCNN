@@ -1,7 +1,6 @@
 import bpy
 import ast
 import time
-import math
 
 
 class Timer(object):  # pragma: no cover
@@ -23,7 +22,7 @@ def add_cube(size, location, quat, i):
                                     layers=(True, False, False, False, False, False, False, False, False, False, False,
                                             False, False, False, False, False, False, False, False, False))
     bpy.context.object.name = "Cube" + str(i)
-    bpy.context.object.scale = size
+    bpy.context.object.dimensions = size
     bpy.context.object.rotation_mode = "QUATERNION"
     bpy.context.object.rotation_quaternion = quat
     # mat = create_new_material("Cube" + str(i) + "_mat", (0.1*i, 0, 0, 1))
@@ -69,18 +68,11 @@ def setup_camera():
     # The principal point in pixels is 306.86169342 and 240.94547232 in pixels and the below in blender units, which are
     # percentage of the biggest width in pixels. So shift_x of 1 will shift the principal point by 620 pixels, so will
     # a shift_y of 1, so be cautious of this
-    cam.shift_x = -0.02052860403125001
-    # cam.shift_x = 0.02052860403125001
-    cam.shift_y = 0.0014773005000000001
-    cam.sensor_width = 32
-    print(cam.type)
-    # cam.lens = 610.55992534 / 640 * cam.sensor_width
-    cam.lens = 610.55992534 / 640 * 16
-    print(cam.sensor_width)
-    print(cam.lens)
-    exit()
-    # cam.angle_x = math.radians(72.4)
-    # cam.angle_y = math.radians(45.5)
+    cam.shift_x = (640 / 2 - 306.86169342) / 640
+    cam.shift_y = (480 / 2 - 240.94547232) / 640
+    # for sensor width see here: https://www.ovt.com/download/sensorpdf/207/OmniVision_OV9282.pdf
+    cam.sensor_width = 3.896
+    cam.lens = 610.55992534 / 640 * cam.sensor_width
 
 
 def setup_speedup():
@@ -138,13 +130,10 @@ def main():
     box_positions = [ast.literal_eval(line) for line in lines]
     setup(box_positions)
     print(len(camera_positions))
-    # offset = (0.2, 0.55, 0.65)
-    offset = (0, 0, 0)
 
     for i, camera_position in enumerate(camera_positions):
         with Timer("Rendering"):
             translation, quat_ros = list_to_tuples(camera_position)
-            translation = tuple([sum(x) for x in zip(translation, offset)])
             quat = ros_to_blender_quat(quat_ros)
             set_camera(translation, quat)
             # print(translation)

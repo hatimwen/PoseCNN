@@ -27,7 +27,7 @@ def main():
             alpha = 0.5
             image_with_mask = cv2.addWeighted(mask, alpha, image, 1 - alpha, 0)
             cv2.imshow("Image with mask", image_with_mask)
-            cv2.waitKey(50)
+            cv2.waitKey(5000)
             counter += 1
 
 

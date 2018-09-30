@@ -5,6 +5,7 @@ import numpy as np
 from pyquaternion import Quaternion
 import rosbag
 import rospy
+import tf
 
 
 def ros_to_blender_quat(qaut):
@@ -53,10 +54,17 @@ def main():
     # dist = np.float32([[0], [0], [0], [0]])
     counter = 0
     bridge = CvBridge()
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    fontScale = 0.5
+    fontColor = (255, 255, 255)
+    lineType = 2
     for topic, msg, t in bag.read_messages(topics=topics, start_time=rospy.Time(1537799716, 30952)):
         # print(msg.header.stamp)
         if topic == "/camera/color/image_raw":
-            (trans, rot) = tf_t.lookupTransform("camera", "vicon", msg.header.stamp)
+            try:
+                (trans, rot) = tf_t.lookupTransform("camera", "vicon", msg.header.stamp)
+            except tf.ExtrapolationException:
+                pass
             trans = np.float32([[trans[0]], [trans[1]], [trans[2]]])
             camera_quat = Quaternion(ros_to_blender_quat(rot))
             camera_rodrigues, jacobian = cv2.Rodrigues(camera_quat.rotation_matrix)
@@ -65,11 +73,18 @@ def main():
                 continue
             image = bridge.imgmsg_to_cv2(msg, "bgr8")
             corners, jacobian = cv2.projectPoints(corner_input, camera_rodrigues, trans, camera_matrix, dist)
+            corner_counter = 1
             for corner in corners:
                 corner = tuple(corner[0])
                 if corner[0] > 0 and corner[1] > 0:
                     cv2.circle(image, corner, 3, (255, 0, 0), -1)
-            cv2.imshow("Image", image)
+                    cv2.putText(image, str(corner_counter), corner, font, fontScale, fontColor, lineType)
+                    corner_counter += 1
+            mask_name = "data/images/cube" + str(counter) + ".png"
+            mask = cv2.imread(mask_name)
+            alpha = 0.5
+            image_with_mask = cv2.addWeighted(mask, alpha, image, 1 - alpha, 0)
+            cv2.imshow("Image", image_with_mask)
             cv2.waitKey(100)
             counter += 1
 

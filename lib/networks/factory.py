@@ -27,8 +27,9 @@ if cfg.TRAIN.SINGLE_FRAME:
                                                      cfg.TRAIN.POSE_REG, cfg.TRAIN.ADAPT, cfg.TRAIN.TRAINABLE, cfg.IS_TRAIN)
     if cfg.NETWORK == 'VGG16FULL':
         __sets['vgg16_full'] = networks.vgg16_full(cfg.INPUT, cfg.TRAIN.NUM_CLASSES, cfg.TRAIN.NUM_UNITS, cfg.TRAIN.SCALES_BASE, \
-                                                     cfg.TRAIN.VERTEX_REG_2D, cfg.TRAIN.VERTEX_REG_3D, cfg.TRAIN.POSE_REG, \
-                                                     cfg.TRAIN.MATCHING, cfg.TRAIN.TRAINABLE, cfg.IS_TRAIN)
+                                                   cfg.TRAIN.THRESHOLD_LABEL, cfg.TRAIN.VOTING_THRESHOLD, \
+                                                   cfg.TRAIN.VERTEX_REG_2D, cfg.TRAIN.VERTEX_REG_3D, cfg.TRAIN.POSE_REG, \
+                                                   cfg.TRAIN.MATCHING, cfg.TRAIN.TRAINABLE, cfg.IS_TRAIN)
     if cfg.NETWORK == 'VGG16DET':
         __sets['vgg16_det'] = networks.vgg16_det(cfg.INPUT, cfg.TRAIN.NUM_CLASSES, cfg.FEATURE_STRIDE, cfg.ANCHOR_SCALES, \
                                                  cfg.ANCHOR_RATIOS, cfg.TRAIN.TRAINABLE, cfg.IS_TRAIN)

@@ -50,7 +50,8 @@ for split in ['train', 'val', 'trainval']:
             datasets.rgbd_scene(split))
 
 # lov dataset
-for split in ['train', 'val', 'keyframe', 'trainval', 'debug', 'train_few', 'val_few']:
+# for split in ['train', 'val', 'keyframe', 'trainval', 'debug', 'train_few', 'val_few']:
+for split in ['train', 'trainval', 'train_few']:
     name = 'lov_{}'.format(split)
     print name
     __sets[name] = (lambda split=split:

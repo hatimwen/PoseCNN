@@ -8,6 +8,7 @@
 *.mtl
 *.xml
 *.png
+*.pkl
 output*
 lib/icp/icp_main.cpp
 ros/build/*

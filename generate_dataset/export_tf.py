@@ -39,27 +39,17 @@ def main():
 
     with open("data/box_positions.txt", "w") as f:
         f.write(str(trans + rot) + "\n")
-    f = open("data/camera1_positions.txt", "w")
-    # f2 = open("data/timestamps2.txt", "w")
-    timestamps = []
-    timestamps2 = []
-    for topic, msg, t in bag.read_messages(topics=topics, start_time=rospy.Time(1537799716, 30952)):
-        # print(msg.header.stamp)
-        # if topic == "/camera1/color/image_raw":
-        if topic == "/camera/color/image_raw":
-            timestamps.append(msg.header.stamp)
-            # print(msg.header.stamp)
-        if topic == "/camera2/color/image_raw":
-            timestamps2.append(msg.header.stamp)
 
     counter = 1
-    for timestamp in timestamps:
-        try:
-            (trans, rot) = tf_t.lookupTransform("vicon", "camera", timestamp)
-        except tf.ExtrapolationException:
-            print("Skipped " + str(counter) + " lookups")
-            counter += 1
-        f.write(str(trans + rot) + "\n")
+    f = open("data/camera1_positions.txt", "w")
+    for topic, msg, t in bag.read_messages(topics=topics, start_time=rospy.Time(1537799716, 30952)):
+        if topic == "/camera/color/image_raw":
+            try:
+                (trans, rot) = tf_t.lookupTransform("vicon", "camera", msg.header.stamp)
+            except tf.ExtrapolationException:
+                print("Skipped " + str(counter) + " lookups")
+                counter += 1
+            f.write(str(trans + rot) + "\n")
     f.close()
 
 
