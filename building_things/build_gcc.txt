@@ -1,0 +1,8 @@
+./contrib/download_prerequisites
+./configure --disable-multilib # this prevents an error poping up that complains about being unable to build 32bit libs
+make
+make install
+
+In general /usr/bin should have the default gcc and cc pointing at gcc and /usr/local/bin should then have the newly
+installed gcc. Careful it overwrites old gcc in /usr/local/bin, so maybe rename old one with version number and then create
+a symlink to gcc and cc pointing to gcc under /usr/local/bin

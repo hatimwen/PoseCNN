@@ -30,3 +30,5 @@ generate_dataset/data/
 data/LOV/data/
 data/LOV/poses/
 data/LOV/models/
+data/SUN2012
+data/ObjectNet3D

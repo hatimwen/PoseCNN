@@ -107,7 +107,7 @@ cd backprojecting_layer
 nvcc -std=c++11 -c -o backprojecting_op.cu.o backprojecting_op_gpu.cu.cc \
 	-I $TF_INC -I$TF_INC/external/nsync/public -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC -arch=sm_50
 
-g++ -std=c++11 -shared -o backprojecting.so backprojecting_op.cc \
+g++ -std=c++11 -shared -o backprojecting.so backprojecting_op.cc -Wl,-z,defs \
 	backprojecting_op.cu.o -I $TF_INC -I$TF_INC/external/nsync/public -fPIC -lcudart -L $CUDA_PATH/lib64 -L$TF_LIB -ltensorflow_framework
 cd ..
 echo 'build backprojecting layer'

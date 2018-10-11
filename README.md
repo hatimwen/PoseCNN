@@ -42,19 +42,17 @@ because of ABI incompatibilities.
     2. Comment /usr/local/cuda/include/crt/common_functions.h line 64: see [this issue](https://github.com/BVLC/caffe/issues/5994) 
     4. If Pangolin is already installed, reinstall Pangolin, since it will be pointing at the old eigen which has the cuda bug mentioned here: https://devtalk.nvidia.com/default/topic/1026622/cuda-programming-and-performance/nvcc-can-t-compile-code-that-uses-eigen/
     
-
-5. Compile lib/synthesize with cmake (optional). This package contains a few useful tools such as generating synthetic images for training and ICP.
+5. Compile lib/synthesize with cmake. This package contains a few useful tools such as generating synthetic images for training and ICP.
 
    Install dependencies with **exactly** these commits. I tried other commits and they all broke/did not build:
    - Python version 2.7, 3.X won't work
    - [Pangolin](https://github.com/stevenlovegrove/Pangolin) commit 1ec721d59ff6b799b9c24b8817f3b7ad2c929b83 worked for me, original author used c2a6ef524401945b493f14f8b5b8aa76cc7d71a9
-   - [Eigen](https://eigen.tuxfamily.org) 3.3.* (tested with 3.3.0 and 3.3.90)
+   - [Eigen](https://eigen.tuxfamily.org) 3. * . * (tested with 3.3.0 and 3.2.92)
    - [boost](https://www.boost.org/) 1.67.0
    - [Sophus](https://github.com/strasdat/Sophus) commit ceb6380a1584b300e687feeeea8799353d48859f
    - [nanoflann](https://github.com/jlblancoc/nanoflann) commit ad7547f4e6beb1cdb3e360912fd2e352ef959465
    - [nlopt](https://github.com/stevengj/nlopt) Important install from this github repo, not using the instructions [here](https://nlopt.readthedocs.io/en/latest/) commit 74e647b667f7c4500cdb4f37653e59c29deb9ee2
    
-
    We use Boost.Python library to link tensorflow with the c++ code. Make sure you have it in your Boost. The tested Boost version is 1.66.0.
 
    1. Change hard coded pathes in lib/synthesize/CMakeLists.txt of boost and add sophus paths manually or via find_script. Uncomment line #add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0) to fix potential compatibility issues with tf.
@@ -72,6 +70,9 @@ because of ABI incompatibilities.
    5. Adapt boost_python and boost_numpy in Cmake line 98/99 to your library name when using boost and python 3.5 it is boost_python27 and boost_numpy27 or symlink these to boots_python and boost_numpy.
    6. Create folder data and models under data/LOV and add or symlink the data and models into there
    
+6. Download [the sun2012 dataset](groups.csail.mit.edu/vision/SUN/releases/SUN2012.tar.gz). Unzip the contents of it into the folder PoseCNN/data/Sun2012/data. 
+7. Download [ObjectNet3D](ftp://cs.stanford.edu/cs/cvgl/ObjectNet3D/ObjectNet3D_images.zip). Unzip the contents of it into the folder PoseCNN/data/ObjectNet3D/data.
+
 ### Notes on ABI Compatibility
 Either all packages used need to be built with gcc 4.8.5 or if some use gcc 5 or above all above packages need following 
 line added to the compilation: -D_GLIBCXX_USE_CXX11_ABI=0  

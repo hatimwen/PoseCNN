@@ -1,5 +1,12 @@
-from pyquaternion import Quaternion
+#!/usr/bin/env python
+import tensorflow as tf
+import sys
+import os
 
-q = Quaternion([1, 1, 0, 0])
-print(q)
-print(q.transformation_matrix)
+
+print(sys.version)
+print(os.getenv("VIRTUAL_ENV"))
+
+
+with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
+    pass
