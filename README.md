@@ -71,10 +71,10 @@ because of ABI incompatibilities.
    6. Create folder data and models under data/LOV and add or symlink the data and models into there
    
 6. Download [the sun2012 dataset][1]. Unzip the contents of it into the folder PoseCNN/data/Sun2012/data. 
-7. Download [ObjectNet3D][2]. Unzip the contents of it into the folder PoseCNN/data/ObjectNet3D/data.
+7. Download ObjectNet3D from ftp://cs.stanford.edu/cs/cvgl/ObjectNet3D/ObjectNet3D_images.zip. Unzip the contents of it into the folder PoseCNN/data/ObjectNet3D/data.
+For why the link is written out see [here](https://github.com/eedeebee/github-markdown-ftp-bug) and bug github about that bug ;)
 
 [1]: https://groups.csail.mit.edu/vision/SUN/releases/SUN2012.tar.gz
-[2]: <ftp://cs.stanford.edu/cs/cvgl/ObjectNet3D/ObjectNet3D_images.zip>
 
 ### Notes on ABI Compatibility
 Either all packages used need to be built with gcc 4.8.5 or if some use gcc 5 or above all above packages need following 
