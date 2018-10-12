@@ -1,12 +1,14 @@
-#!/usr/bin/env python
-import tensorflow as tf
-import sys
-import os
+class A(object):
+    def __init__(self):
+        print("Parent")
+    def wow(self):
+        print("wow")
 
+class B(A):
+    def __init__(self):
+        # A.__init__(self)
+        print("Child")
+        super(B, self).__init__()
 
-print(sys.version)
-print(os.getenv("VIRTUAL_ENV"))
-
-
-with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
-    pass
+c = B()
+c.wow()

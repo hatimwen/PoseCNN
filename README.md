@@ -70,8 +70,11 @@ because of ABI incompatibilities.
    5. Adapt boost_python and boost_numpy in Cmake line 98/99 to your library name when using boost and python 3.5 it is boost_python27 and boost_numpy27 or symlink these to boots_python and boost_numpy.
    6. Create folder data and models under data/LOV and add or symlink the data and models into there
    
-6. Download [the sun2012 dataset](groups.csail.mit.edu/vision/SUN/releases/SUN2012.tar.gz). Unzip the contents of it into the folder PoseCNN/data/Sun2012/data. 
-7. Download [ObjectNet3D](ftp://cs.stanford.edu/cs/cvgl/ObjectNet3D/ObjectNet3D_images.zip). Unzip the contents of it into the folder PoseCNN/data/ObjectNet3D/data.
+6. Download [the sun2012 dataset][1]. Unzip the contents of it into the folder PoseCNN/data/Sun2012/data. 
+7. Download [ObjectNet3D][2]. Unzip the contents of it into the folder PoseCNN/data/ObjectNet3D/data.
+
+[1]: groups.csail.mit.edu/vision/SUN/releases/SUN2012.tar.gz
+[2]: ftp://cs.stanford.edu/cs/cvgl/ObjectNet3D/ObjectNet3D_images.zip
 
 ### Notes on ABI Compatibility
 Either all packages used need to be built with gcc 4.8.5 or if some use gcc 5 or above all above packages need following 
