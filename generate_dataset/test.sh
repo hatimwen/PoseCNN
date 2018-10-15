@@ -13,7 +13,7 @@ export CUDA_VISIBLE_DEVICES=$1
 ## train FCN for single frames
 #export LD_PRELOAD=/usr/lib/libtcmalloc.so.4
 
-time ./test.py --gpu 0
+time ./$ROOT/generate_dataset/test.py --gpu 0
   --network vgg16_full \
   --weights data/imagenet_models/vgg16.npy \
   --imdb lov_trainval \

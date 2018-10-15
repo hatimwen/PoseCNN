@@ -1,1 +1,12 @@
-bsub
+# load needed modules
+module load new gcc/4.8.2 python/2.7.14
+
+bsub -n 8 'sh $SCRATCH/PoseCNN/experiments/scripts/lov_color_2d_train_full.sh'
+
+# one hour interactive console
+bsub -n 1 -Is -W 1:00 -R "rusage[mem=2400]" bash
+
+
+module list
+module purge
+module load

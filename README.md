@@ -86,6 +86,7 @@ against your custom built binaries using `ldd your_binary.so`. To give you the a
 add following to the compile command: `-Wl,-z,defs`. 
    
 ### Building
+   Warning nothing can be built in parallel, don't do make -jX just use make
    1. Build kinect_fusion
    
     ```Shell
