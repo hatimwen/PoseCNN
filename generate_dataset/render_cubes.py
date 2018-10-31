@@ -1,6 +1,8 @@
-import bpy
 import ast
+import bpy
+import os
 import time
+import yaml
 
 
 class Timer(object):  # pragma: no cover
@@ -97,14 +99,13 @@ def setup_scene():
     bpy.context.scene.render.resolution_percentage = 100
 
 
-def setup(box_positions):
+def setup(box_positions, box_sizes):
     setup_camera()
     # setup_speedup()
     setup_scene()
 
     objs = bpy.data.objects
     objs.remove(objs["Cube"], True)
-    box_sizes = [(0.349, 0.213, 0.117)]
 
     for i, box_position in enumerate(box_positions):
         translation, quat_ros = list_to_tuples(box_position)
@@ -121,24 +122,44 @@ def ros_to_blender_quat(qaut):
     return qaut[-1], qaut[0], qaut[1], qaut[2]
 
 
+def read_config():
+    with open("data/dataset.txt") as f:
+        dataset_config = f.readline()
+    dataset = os.path.split(dataset_config)[1].split(".")[0]
+    stream = open(dataset_config, "r")
+    yaml_data = yaml.load_all(stream)
+    data_dict = list(yaml_data)[0]
+    boxes = data_dict["boxes"]
+    return dataset, boxes
+
+
 def main():
-    with open('data/camera1_positions.txt') as f:
+    dataset, boxes = read_config()
+    with open("data/" + dataset + "/camera1_positions.txt") as f:
         lines = f.readlines()
     camera_positions = [ast.literal_eval(line) for line in lines]
-    with open('data/box_positions.txt') as f:
+    with open("data/" + dataset + "/box_positions.txt") as f:
         lines = f.readlines()
     box_positions = [ast.literal_eval(line) for line in lines]
-    setup(box_positions)
+    box_sizes = []
+    print(boxes)
+    for box_size in boxes:
+        element1 = box_size[0]
+        element2 = box_size[1]
+        element3 = box_size[2]
+        box_size_tuple = (element1["x"], element2["y"], element3["z"])
+        box_sizes.append(box_size_tuple)
+    print(box_sizes)
+    setup(box_positions, box_sizes)
     print(len(camera_positions))
+    os.makedirs("data/images/" + dataset, exist_ok=True)
 
     for i, camera_position in enumerate(camera_positions):
         with Timer("Rendering"):
             translation, quat_ros = list_to_tuples(camera_position)
             quat = ros_to_blender_quat(quat_ros)
             set_camera(translation, quat)
-            # print(translation)
-            # print(quat)
-            bpy.context.scene.render.filepath = "data/images/cube" + str(i) + ".png"
+            bpy.context.scene.render.filepath = "data/images/" + dataset + "/cube" + str(i) + ".png"
             bpy.ops.render.render(use_viewport=True, write_still=True)
 
 

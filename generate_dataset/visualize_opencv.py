@@ -6,19 +6,18 @@ from pyquaternion import Quaternion
 import rosbag
 import rospy
 import tf
+from export_tf import read_config
 
 
 def ros_to_blender_quat(qaut):
     return qaut[-1], qaut[0], qaut[1], qaut[2]
 
 
-def get_corner(tf_t):
+def get_corner(tf_t, times, num_boxes):
     corner = []
-    for i in range(1, 9):
-        (trans, rot) = tf_t.lookupTransform("vicon", "box_corner" + str(i), rospy.Time(1537799697, 297481))
+    for i in range(num_boxes):
+        (trans, rot) = tf_t.lookupTransform("vicon", "box" + str(i + 1), rospy.Time(int(times[i][0]), int(times[i][1])))
         corner.append(list(trans))
-    (trans, rot) = tf_t.lookupTransform("vicon", "box11", rospy.Time(1537799697, 297481))
-    corner.append(list(trans))
     corners = np.float32(corner)
     return corners
 
@@ -43,11 +42,16 @@ def calculate_point_camera(name, K, corner):
 
 
 def main():
-    # bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/dataset_one_box.bag")
-    bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/test.bag")
+    dataset, boxes = read_config()
+    num_boxes = len(boxes)
+    with open("data/" + dataset + "/times.txt") as f:
+        times = []
+        for i in range(num_boxes):
+            times.append(f.readline().split("."))
+    bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/" + dataset + ".bag")
     topics = ["/camera/color/image_raw"]
     tf_t = fill_transformer(bag)
-    corner_input = get_corner(tf_t)
+    corner_input = get_corner(tf_t, times, num_boxes)
     # print(corner_input)
     camera_matrix = np.float32([[610.55992534, 0, 306.86169342], [0, 610.32086262, 240.94547232], [0, 0, 1]])
     dist = np.float32([[0.10793695], [-0.21546604], [0.00045875], [-0.00670819]])
@@ -58,7 +62,7 @@ def main():
     fontScale = 0.5
     fontColor = (255, 255, 255)
     lineType = 2
-    for topic, msg, t in bag.read_messages(topics=topics, start_time=rospy.Time(1537799716, 30952)):
+    for topic, msg, t in bag.read_messages(topics=topics, start_time=rospy.Time(int(times[-1][0]), int(times[-1][1]))):
         # print(msg.header.stamp)
         if topic == "/camera/color/image_raw":
             try:
@@ -80,10 +84,14 @@ def main():
                     cv2.circle(image, corner, 3, (255, 0, 0), -1)
                     cv2.putText(image, str(corner_counter), corner, font, fontScale, fontColor, lineType)
                     corner_counter += 1
-            mask_name = "data/images/cube" + str(counter) + ".png"
+            mask_name = "data/images/" + dataset + "/cube" + str(counter) + ".png"
             mask = cv2.imread(mask_name)
             alpha = 0.5
             image_with_mask = cv2.addWeighted(mask, alpha, image, 1 - alpha, 0)
+            w = 1280
+            h = 960
+            image_with_mask = cv2.resize(image_with_mask, (w, h))
+            cv2.resizeWindow("Image", w, h)
             cv2.imshow("Image", image_with_mask)
             cv2.waitKey(100)
             counter += 1
