@@ -1,3 +1,4 @@
+from common import ros_to_blender_quat
 import cv2
 from cv_bridge import CvBridge
 from export_tf import fill_transformer
@@ -7,10 +8,6 @@ import rosbag
 import rospy
 import tf
 from export_tf import read_config
-
-
-def ros_to_blender_quat(qaut):
-    return qaut[-1], qaut[0], qaut[1], qaut[2]
 
 
 def get_corner(tf_t, times, num_boxes):
@@ -42,12 +39,8 @@ def calculate_point_camera(name, K, corner):
 
 
 def main():
-    dataset, boxes = read_config()
-    num_boxes = len(boxes)
-    with open("data/" + dataset + "/times.txt") as f:
-        times = []
-        for i in range(num_boxes):
-            times.append(f.readline().split("."))
+    dataset, boxes, num_boxes, times, start_time, end_time = read_config()
+
     bag = rosbag.Bag("/home/satco/PycharmProjects/PoseCNN/bag/" + dataset + ".bag")
     topics = ["/camera/color/image_raw"]
     tf_t = fill_transformer(bag)
@@ -62,7 +55,10 @@ def main():
     fontScale = 0.5
     fontColor = (255, 255, 255)
     lineType = 2
-    for topic, msg, t in bag.read_messages(topics=topics, start_time=rospy.Time(int(times[-1][0]), int(times[-1][1]))):
+
+    print(start_time)
+    print(end_time)
+    for topic, msg, t in bag.read_messages(topics=topics, start_time=start_time, end_time=end_time):
         # print(msg.header.stamp)
         if topic == "/camera/color/image_raw":
             try:

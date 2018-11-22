@@ -1,5 +1,6 @@
 import ast
 import bpy
+from common import ros_to_blender_quat, create_dataset_folder, get_filename_prefix
 import os
 import time
 import yaml
@@ -27,8 +28,8 @@ def add_cube(size, location, quat, i):
     bpy.context.object.dimensions = size
     bpy.context.object.rotation_mode = "QUATERNION"
     bpy.context.object.rotation_quaternion = quat
-    # mat = create_new_material("Cube" + str(i) + "_mat", (0.1*i, 0, 0, 1))
-    # bpy.context.object.data.materials.append(mat)
+    mat = create_new_material("Cube" + str(i) + "_mat", (0.15*i, 0, 0, 1))
+    bpy.context.object.data.materials.append(mat)
 
 
 def set_camera(location, quat):
@@ -93,7 +94,7 @@ def setup_speedup():
 
 def setup_scene():
     # needed for rendering the whole cube with one color
-    # bpy.data.scenes['Scene'].render.engine = "CYCLES"
+    bpy.data.scenes['Scene'].render.engine = "CYCLES"
     bpy.context.scene.render.resolution_x = 640
     bpy.context.scene.render.resolution_y = 480
     bpy.context.scene.render.resolution_percentage = 100
@@ -115,11 +116,6 @@ def setup(box_positions, box_sizes):
 
 def list_to_tuples(l):
     return tuple(l[:3]), tuple(l[3:])
-
-
-# blender uses wxyz and ros xyzw
-def ros_to_blender_quat(qaut):
-    return qaut[-1], qaut[0], qaut[1], qaut[2]
 
 
 def read_config():
@@ -152,14 +148,17 @@ def main():
     print(box_sizes)
     setup(box_positions, box_sizes)
     print(len(camera_positions))
-    os.makedirs("data/images/" + dataset, exist_ok=True)
+    # os.makedirs("data/images/" + dataset, exist_ok=True)
+
+    data_base_path = create_dataset_folder(dataset)
 
     for i, camera_position in enumerate(camera_positions):
         with Timer("Rendering"):
             translation, quat_ros = list_to_tuples(camera_position)
             quat = ros_to_blender_quat(quat_ros)
             set_camera(translation, quat)
-            bpy.context.scene.render.filepath = "data/images/" + dataset + "/cube" + str(i) + ".png"
+            prefix = get_filename_prefix(i)
+            bpy.context.scene.render.filepath = os.path.join(data_base_path, prefix + "-label.png")
             bpy.ops.render.render(use_viewport=True, write_still=True)
 
 
