@@ -121,7 +121,7 @@ def list_to_tuples(l):
 def read_config():
     with open("data/dataset.txt") as f:
         dataset_config = f.readline().rstrip()
-    dataset = os.path.split(dataset_config)[1][:-4]
+    dataset = os.path.split(dataset_config)[1][:-5]
     stream = open(dataset_config, "r")
     yaml_data = yaml.load_all(stream)
     data_dict = list(yaml_data)[0]
