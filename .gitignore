@@ -26,7 +26,10 @@ lib/nms/gpu_nms.cpp
 lib/normals/gpu_normals.cpp
 lib/synthesize/build/
 bag/
+
 generate_dataset/data/
+generate_dataset/config.yaml
+
 data/LOV/data/
 data/LOV/poses/
 data/LOV/models/

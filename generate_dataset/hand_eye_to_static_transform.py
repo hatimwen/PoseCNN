@@ -4,6 +4,10 @@ import ast
 
 base_path = os.path.join(os.environ['thesis'], "config", "camera")
 input_path = os.path.join(base_path, "calibration_optimized.json")
+output_path = os.path.join(os.environ['thesis'], "launch", "recording", "add_static_transform.launch")
+print("Input file: " + input_path)
+print("Output file: " + output_path)
+
 with open(input_path, "r") as f:
     data = f.read()
 
@@ -26,8 +30,8 @@ output_str = """<?xml version="1.0" encoding="utf-8"?>
     <node pkg="rosbag" type="record" name="rosbag_record" args="record -O /home/satco/PycharmProjects/PoseCNN/bag/test.bag -a">
     </node>
 </launch>"""
-output_str = output_str.format(*(translation + rotation))
+output_str = "{} {} {} {} {} {} {}".format(*(translation + rotation))
 print(output_str)
-output_path = os.path.join(os.environ['thesis'], "launch", "recording", "add_static_transform.launch")
-with open(output_path, "w") as output:
-    output.write(output_str)
+
+# with open(output_path, "w") as output:
+    # output.write(output_str)

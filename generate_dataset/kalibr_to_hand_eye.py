@@ -14,6 +14,8 @@ for line in lines:
         projection = line.split("[")[1].split("]")[0].split()
         print(projection)
 output_path = os.path.join(base_path, "d435_hand_eye.yaml")
+print("Input file: " + input_path)
+print("Output file: " + output_path)
 
 output_str = """distortion:
   parameters:
@@ -26,7 +28,7 @@ output_str = """distortion:
     - {}
   type: radial-tangential
 type: pinhole
-label: d415_821312061282
+label: d435_821312061282
 line-delay-nanoseconds: 0
 image_width: 640
 image_height: 480

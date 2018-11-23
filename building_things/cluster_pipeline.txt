@@ -1,0 +1,30 @@
+# Data
+
+cp -r ~/PoseCNN $SCRATCH
+cd data
+unzip ObjectNet3D_images.zip -d $SCRATCH
+mkdir -p $SCRATCH/PoseCNN/data/ObjectNet3D/data
+# euler
+mv $SCRATCH/ObjectNet3D_images/Images $SCRATCH/PoseCNN/data/ObjectNet3D/data
+rm -r ObjectNet3D_images
+# rsl-dlcs
+mv $SCRATCH/ObjectNet3D/Images $SCRATCH/PoseCNN/data/ObjectNet3D/data
+rm -r ObjectNet3D
+tar xf SUN2012.tar -C $SCRATCH
+mkdir -p $SCRATCH/PoseCNN/data/SUN2012/data
+mv $SCRATCH/Images $SCRATCH/PoseCNN/data/SUN2012/data
+mv $SCRATCH/Annotations $SCRATCH/PoseCNN/data/SUN2012/data
+unzip demo_models.zip -d $SCRATCH
+mv $SCRATCH/vgg16* $SCRATCH/PoseCNN/data/demo_models
+
+# On cluster
+mkdir -p $SCRATCH/opencv_libs
+mkdir -p $SCRATCH/nlopt_libs
+mkdir -p $SCRATCH/tcmalloc_libs
+
+# Opencv
+scp /usr/local/lib/libopencv_*.so.4.0.0 kbubanja@rsl-dlcs.ethz.ch:/mnt/drive_c/datasets/kaju/opencv_libs
+use change_symlinks with src "4.0.0" and dst "4.0" and use it once more with src "4.0" and dst ""
+scp /usr/local/lib/libnlopt.so.0.9.0 kbubanja@rsl-dlcs.ethz.ch:/mnt/drive_c/datasets/kaju/nlopt_libs
+use change_symlinks with src "4.0.0" and dst "4.0" and use it once more with src "4.0" and dst ""
+scp /usr/lib/libtcmalloc.so.4.2.6 kbubanja@rsl-dlcs.ethz.ch:/mnt/drive_c/datasets/kaju/tcmalloc_libs

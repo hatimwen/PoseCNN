@@ -1,9 +1,0 @@
-cp -r ~/PoseCNN $SCRATCH
-cd data
-unzip ObjectNet3D_images.zip -d $SCRATCH
-mv $SCRATCH/ObjectNet3D_images/Images $SCRATCH/PoseCNN/data/ObjectNet3D/data
-tar xf SUN2012.tar -C $SCRATCH
-mv $SCRATCH/Images $SCRATCH/PoseCNN/data/SUN2012/data
-mv $SCRATCH/Annotations $SCRATCH/PoseCNN/data/SUN2012/data
-unzip demo_models.zip -d $SCRATCH
-mv $SCRATCH/vgg16* $SCRATCH/PoseCNN/data/demo_models
