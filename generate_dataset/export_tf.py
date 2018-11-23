@@ -40,7 +40,7 @@ def fill_transformer(bag):
 
 def read_config():
     with open("data/dataset.txt") as f:
-        dataset_config = f.readline()
+        dataset_config = f.readline().rstrip()
     dataset = os.path.split(dataset_config)[1][:-4]
     stream = open(dataset_config, "r")
     yaml_data = yaml.load_all(stream)
