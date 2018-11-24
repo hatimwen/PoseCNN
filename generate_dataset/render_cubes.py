@@ -82,8 +82,8 @@ def setup_speedup():
     # speed up
     # bpy.context.scene.world.light_settings.samples = 1
     # Big tiles better for GPU small better for CPU
-    bpy.data.scenes['Scene'].render.tile_x = 1024
-    bpy.data.scenes['Scene'].render.tile_y = 1024
+    bpy.data.scenes['Scene'].render.tile_x = 160
+    bpy.data.scenes['Scene'].render.tile_y = 120
     bpy.context.scene.cycles.device = 'GPU'
     bpy.context.user_preferences.addons['cycles'].preferences.compute_device_type = 'CUDA'
     # CPU
@@ -102,7 +102,7 @@ def setup_scene():
 
 def setup(box_positions, box_sizes):
     setup_camera()
-    # setup_speedup()
+    #setup_speedup()
     setup_scene()
 
     objs = bpy.data.objects
