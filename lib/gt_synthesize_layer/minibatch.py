@@ -323,7 +323,7 @@ def _get_label_blob(roidb, intrinsic_matrix, data_out, num_classes, db_inds_syn,
                     filename = cfg.TRAIN.SYNROOT + '{:06d}-label.png'.format(db_inds_syn[i])
                     im = pad_im(cv2.imread(filename, cv2.IMREAD_UNCHANGED), 16)
             else:
-		print("No adapt no is_syn")
+                print("No adapt no is_syn")
                 meta_data = scipy.io.loadmat(roidb[i]['meta_data'])
                 meta_data['cls_indexes'] = meta_data['cls_indexes'].flatten()
                 if os.path.exists(roidb[i]['depth']):
@@ -332,8 +332,8 @@ def _get_label_blob(roidb, intrinsic_matrix, data_out, num_classes, db_inds_syn,
                     im_depth = np.zeros((blob_height, blob_width), dtype=np.float32)
 
                 # read label image
-		print("LAAAAAAAAABEL")
-		print(roidb[i]['label'])
+                print("LAAAAAAAAABEL")
+                print(roidb[i]['label'])
                 im = pad_im(cv2.imread(roidb[i]['label'], cv2.IMREAD_UNCHANGED), 16)
 
             height = im_depth.shape[0]
@@ -357,7 +357,7 @@ def _get_label_blob(roidb, intrinsic_matrix, data_out, num_classes, db_inds_syn,
             # process annotation if training for two classes
             cls_indexes_old = []
             if num_classes == 2 and roidb[i]['cls_index'] > 0:
-		print("HEEEEEERE")
+                print("HEEEEEERE")
                 I = np.where(im == roidb[i]['cls_index'])
                 im[:, :] = 0
                 im[I[0], I[1]] = 1
@@ -579,8 +579,8 @@ def _generate_vertex_targets(im_label, cls_indexes, center, poses, num_classes, 
     else:
         c = np.zeros((2, 1), dtype=np.float32)
         for i in xrange(1, num_classes):
-	    print("IMAGE LABEL")
-	    print(im_label)
+            print("IMAGE LABEL")
+            print(im_label)
             y, x = np.where(im_label == i)
             I = np.where(im_label == i)
             ind = np.where(cls_indexes == i)[0]
