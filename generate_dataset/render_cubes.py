@@ -157,7 +157,7 @@ def main():
             translation, quat_ros = list_to_tuples(camera_position)
             quat = ros_to_blender_quat(quat_ros)
             set_camera(translation, quat)
-            prefix = get_filename_prefix(i)
+            prefix = get_filename_prefix(i+1)
             bpy.context.scene.render.filepath = os.path.join(data_base_path, prefix + "-label.png")
             bpy.ops.render.render(use_viewport=True, write_still=True)
 

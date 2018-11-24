@@ -46,6 +46,8 @@ def prep_im_for_blob(im, pixel_means, target_size, max_size):
 
 
 def pad_im(im, factor, value=0):
+    print("Image before padding")
+    print(im)
     height = im.shape[0]
     width = im.shape[1]
 

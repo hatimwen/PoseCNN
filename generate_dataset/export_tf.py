@@ -67,6 +67,7 @@ def rot_trans_to_matrix(rot, trans):
 
 def main():
     dataset, boxes, num_boxes, times, start_time, end_time = read_config()
+    print("Preparing " + dataset)
 
     bag = rosbag.Bag(os.path.join("/home/satco/PycharmProjects/PoseCNN/bag", dataset + ".bag"))
     topics = ["/camera/color/image_raw", "/camera/aligned_depth_to_color/image_raw"]
@@ -87,7 +88,7 @@ def main():
             pose = rot_trans_to_matrix(rot, trans)
             poses = np.dstack((poses, pose))
 
-    cls_indexes = [0] * num_boxes
+    cls_indexes = [1] * num_boxes
     cls_indexes = np.float32(cls_indexes)
 
     # getting added later, just here for completeness sake to show all the fields available in mat_dict
