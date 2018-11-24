@@ -24,18 +24,12 @@ class lov(datasets.imdb):
                             else lov_path
         self._data_path = os.path.join(self._lov_path, 'data')
 
-        self._classes = ('__background__', '002_master_chef_can', '003_cracker_box', '004_sugar_box', '005_tomato_soup_can', '006_mustard_bottle', \
-                         '007_tuna_fish_can', '008_pudding_box', '009_gelatin_box', '010_potted_meat_can', '011_banana', '019_pitcher_base', \
-                         '021_bleach_cleanser', '024_bowl', '025_mug', '035_power_drill', '036_wood_block', '037_scissors', '040_large_marker', \
-                         '051_large_clamp', '052_extra_large_clamp', '061_foam_brick')
+        self._classes = ('__background__', '000_box')
 
-        self._class_colors = [(255, 255, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255), (0, 255, 255), \
-                              (128, 0, 0), (0, 128, 0), (0, 0, 128), (128, 128, 0), (128, 0, 128), (0, 128, 128), \
-                              (64, 0, 0), (0, 64, 0), (0, 0, 64), (64, 64, 0), (64, 0, 64), (0, 64, 64), 
-                              (192, 0, 0), (0, 192, 0), (0, 0, 192)]
+        self._class_colors = [(255, 255, 255), (255, 0, 0)]
 
-        self._class_weights = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-        self._symmetry = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
+        self._class_weights = [1, 1]
+        self._symmetry = np.array([0, 1])
         self._points, self._points_all = self._load_object_points()
         self._extents = self._load_object_extents()
 
