@@ -98,6 +98,7 @@ def setup_scene():
     bpy.context.scene.render.resolution_x = 640
     bpy.context.scene.render.resolution_y = 480
     bpy.context.scene.render.resolution_percentage = 100
+    bpy.context.scene.render.image_settings.color_mode = "BW"
 
 
 def setup(box_positions, box_sizes):
