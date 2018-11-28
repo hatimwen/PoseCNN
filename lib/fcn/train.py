@@ -238,7 +238,7 @@ class SolverWrapper(object):
         for iter in range(max_iters):
 
             timer.tic()
-            loss_value, loss_cls_value, loss_vertex_value, loss_pose_value, lr, _ = sess.run([loss, loss_cls, loss_vertex, loss_pose, learning_rate, train_op])
+            summary, loss_value, loss_cls_value, loss_vertex_value, loss_pose_value, lr, _ = sess.run([merged, loss, loss_cls, loss_vertex, loss_pose, learning_rate, train_op])
             train_writer.add_summary(summary, iter)
             timer.toc()
             
