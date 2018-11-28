@@ -120,48 +120,55 @@ def list_to_tuples(l):
 
 
 def read_config():
+    datasets = []
+    boxes_multiple = []
     with open("data/dataset.txt") as f:
-        dataset_config = f.readline().rstrip()
-    dataset = os.path.split(dataset_config)[1][:-5]
-    stream = open(dataset_config, "r")
-    yaml_data = yaml.load_all(stream)
-    data_dict = list(yaml_data)[0]
-    boxes = data_dict["boxes"]
-    return dataset, boxes
+        for line in f:
+            dataset_path = line.rstrip()
+            dataset = os.path.split(dataset_path)[1][:-5]
+            datasets.append(dataset)
+            stream = open(dataset_path, "r")
+            yaml_data = yaml.load_all(stream)
+            data_dict = list(yaml_data)[0]
+            boxes = data_dict["boxes"]
+            boxes_multiple.append(boxes)
+    print(datasets)
+    print(boxes_multiple)
+    return datasets, boxes_multiple
 
 
 def main():
-    dataset, boxes = read_config()
-    with open("data/" + dataset + "/camera1_positions.txt") as f:
-        lines = f.readlines()
-    camera_positions = [ast.literal_eval(line) for line in lines]
-    with open("data/" + dataset + "/box_positions.txt") as f:
-        lines = f.readlines()
-    box_positions = [ast.literal_eval(line) for line in lines]
-    box_sizes = []
-    print(boxes)
-    for box_size in boxes:
-        element1 = box_size[0]
-        element2 = box_size[1]
-        element3 = box_size[2]
-        box_size_tuple = (element1["x"], element2["y"], element3["z"])
-        box_sizes.append(box_size_tuple)
-    print(box_sizes)
-    setup(box_positions, box_sizes)
-    print(len(camera_positions))
-    # os.makedirs("data/images/" + dataset, exist_ok=True)
+    datasets, boxes_multiple = read_config()
+    for i, dataset in enumerate(datasets):
+        with open("data/" + dataset + "/camera1_positions.txt") as f:
+            lines = f.readlines()
+        camera_positions = [ast.literal_eval(line) for line in lines]
+        with open("data/" + dataset + "/box_positions.txt") as f:
+            lines = f.readlines()
+        box_positions = [ast.literal_eval(line) for line in lines]
+        box_sizes = []
+        print(boxes_multiple[i])
+        for box_size in boxes_multiple[i]:
+            element1 = box_size[0]
+            element2 = box_size[1]
+            element3 = box_size[2]
+            box_size_tuple = (element1["x"], element2["y"], element3["z"])
+            box_sizes.append(box_size_tuple)
+        print(box_sizes)
+        setup(box_positions, box_sizes)
+        print(len(camera_positions))
 
-    data_base_path = create_dataset_folder(dataset)
+        data_base_path = create_dataset_folder(dataset)
 
-    for i, camera_position in enumerate(camera_positions):
-        with Timer("Rendering"):
-            translation, quat_ros = list_to_tuples(camera_position)
-            quat = ros_to_blender_quat(quat_ros)
-            set_camera(translation, quat)
-            prefix = get_filename_prefix(i+1)
-            bpy.context.scene.render.filepath = os.path.join(data_base_path, prefix + "-label.png")
-            bpy.ops.render.render(use_viewport=True, write_still=True)
+        for j, camera_position in enumerate(camera_positions):
+            with Timer("Rendering"):
+                translation, quat_ros = list_to_tuples(camera_position)
+                quat = ros_to_blender_quat(quat_ros)
+                set_camera(translation, quat)
+                prefix = get_filename_prefix(j+1)
+                bpy.context.scene.render.filepath = os.path.join(data_base_path, prefix + "-label.png")
+                bpy.ops.render.render(use_viewport=True, write_still=True)
 
 
 if __name__ == "__main__":
-    main()
+    read_config()
