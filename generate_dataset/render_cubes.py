@@ -106,8 +106,18 @@ def setup(box_positions, box_sizes):
     #setup_speedup()
     setup_scene()
 
+    # remove the default cube
     objs = bpy.data.objects
-    objs.remove(objs["Cube"], True)
+    try:
+        objs.remove(objs["Cube"], True)
+    except KeyError:
+        pass
+    # remove subsequent cubes added by previous datasets
+    for i in range(10):
+        try:
+            objs.remove(objs["Cube" + str(i)], True)
+        except KeyError:
+            pass
 
     for i, box_position in enumerate(box_positions):
         translation, quat_ros = list_to_tuples(box_position)
