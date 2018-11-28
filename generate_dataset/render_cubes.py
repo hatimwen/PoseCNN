@@ -132,8 +132,6 @@ def read_config():
             data_dict = list(yaml_data)[0]
             boxes = data_dict["boxes"]
             boxes_multiple.append(boxes)
-    print(datasets)
-    print(boxes_multiple)
     return datasets, boxes_multiple
 
 
@@ -171,4 +169,4 @@ def main():
 
 
 if __name__ == "__main__":
-    read_config()
+    main()
