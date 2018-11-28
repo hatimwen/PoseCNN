@@ -17,7 +17,7 @@ def main():
         mask = cv2.imread(mask_path)
         alpha = 0.5
         image_with_mask = cv2.addWeighted(mask, alpha, image, 1 - alpha, 0)
-        result = Image.fromarray(image_with_mask)
+        result = Image.fromarray(image_with_mask, "RGB")
         result.show()
 
 
