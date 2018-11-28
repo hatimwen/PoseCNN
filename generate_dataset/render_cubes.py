@@ -102,17 +102,8 @@ def setup_scene():
 
 
 def setup(box_positions, box_sizes):
-    setup_camera()
-    #setup_speedup()
-    setup_scene()
-
-    # remove the default cube
-    objs = bpy.data.objects
-    try:
-        objs.remove(objs["Cube"], True)
-    except KeyError:
-        pass
     # remove subsequent cubes added by previous datasets
+    objs = bpy.data.objects
     for i in range(10):
         try:
             objs.remove(objs["Cube" + str(i)], True)
@@ -146,6 +137,14 @@ def read_config():
 
 
 def main():
+    setup_camera()
+    # setup_speedup()
+    setup_scene()
+
+    # remove the default cube
+    objs = bpy.data.objects
+    objs.remove(objs["Cube"], True)
+
     datasets, boxes_multiple = read_config()
     for i, dataset in enumerate(datasets):
         with open("data/" + dataset + "/camera1_positions.txt") as f:
