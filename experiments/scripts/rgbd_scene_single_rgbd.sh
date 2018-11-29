@@ -15,7 +15,7 @@ echo Logging output to "$LOG"
 time ./tools/train_net.py --gpu 0 \
   --network vgg16_convs \
   --weights data/imagenet_models/vgg16_convs.npy \
-  --imdb rgbd_scene_train \
+  --imdb rgbd_scene_trainval \
   --cfg experiments/cfgs/rgbd_scene_single_rgbd.yml \
   --iters 40000
 
