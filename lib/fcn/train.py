@@ -383,7 +383,8 @@ def load_and_enqueue(sess, net, data_layer, coord):
 
     iter = 0
     while not coord.should_stop():
-        blobs = data_layer.forward(iter)
+        # blobs = data_layer.forward(iter)
+        blobs = data_layer.forward()
         iter += 1
 
         if cfg.INPUT == 'RGBD':
