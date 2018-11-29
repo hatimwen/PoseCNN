@@ -202,7 +202,6 @@ class SolverWrapper(object):
         coord.request_stop()
         coord.join([t])
 
-
     def train_model_vertex_pose(self, sess, train_op, loss, loss_cls, loss_vertex, loss_pose, learning_rate, max_iters, data_layer):
         """Network training loop."""
         # add summary
