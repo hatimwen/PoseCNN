@@ -153,8 +153,6 @@ def _process_label_image(label_image, class_colors, class_weights):
     width = label_image.shape[1]
     num_classes = len(class_colors)
     label_index = np.zeros((height, width, num_classes), dtype=np.float32)
-    print(label_image)
-    print(label_image.shape)
     if len(label_image.shape) == 3:
         # label image is in BGR order
         index = label_image[:,:,2] + 256*label_image[:,:,1] + 256*256*label_image[:,:,0]
