@@ -5,7 +5,7 @@ set -e
 
 export PYTHONUNBUFFERED="True"
 export CUDA_VISIBLE_DEVICES=$1
-export LD_PRELOAD=/usr/lib/libtcmalloc.so.4
+export LD_PRELOAD=/mnt/drive_c/datasets/kaju/tcmalloc_libs/libtcmalloc.so.4
 
 LOG="experiments/logs/rgbd_scene_multi_rgbd.txt.`date +'%Y-%m-%d_%H-%M-%S'`"
 exec &> >(tee -a "$LOG")

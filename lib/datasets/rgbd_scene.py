@@ -16,7 +16,7 @@ class rgbd_scene(datasets.imdb):
                             else rgbd_scene_path
         self._data_path = os.path.join(self._rgbd_scene_path, 'data')
         self._classes = ('__background__', 'bowl')
-        self._class_colors = [(255, 255, 255), (255, 0, 0)]
+        self._class_colors = [(64, 64, 64), (0, 0, 0)]
         self._class_weights = [1, 1]
         self._symmetry = np.array([0, 1])
         self._class_to_ind = dict(zip(self.classes, xrange(self.num_classes)))

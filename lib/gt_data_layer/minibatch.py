@@ -163,9 +163,9 @@ def _process_label_image(label_image, class_colors, class_weights):
             label_index[I[0], I[1], i] = class_weights[i]
     else:
         for i in xrange(len(class_colors)):
-            I = np.where(label_image == i)
+            I = np.where(label_image == class_colors[i][0])
             label_index[I[0], I[1], i] = class_weights[i]
-    
+
     return label_index
 
 

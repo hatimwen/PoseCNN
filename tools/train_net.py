@@ -278,6 +278,7 @@ if __name__ == '__main__':
     print 'Loaded dataset `{:s}` for training'.format(imdb.name)
     print 'symmetry'
     print imdb._symmetry
+    print imdb._class_colors
     roidb = get_training_roidb(imdb)
 
     output_dir = get_output_dir(imdb, None)

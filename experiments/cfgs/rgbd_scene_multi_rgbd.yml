@@ -16,6 +16,7 @@ TRAIN:
   SNAPSHOT_PREFIX: vgg16_fcn_rgbd_multi_frame
   USE_FLIPPED: False
   GRID_SIZE: 512
+  VISUALIZE: True
 TEST:
   SINGLE_FRAME: False
   SCALES_BASE: !!python/tuple [1.0]
