@@ -11,7 +11,7 @@ exec &> >(tee -a "$LOG")
 echo Logging output to "$LOG"
 
 # train FCN for single frames
-export LD_PRELOAD=/usr/lib/libtcmalloc.so.4
+export LD_PRELOAD=/mnt/drive_c/datasets/kaju/tcmalloc_libs/libtcmalloc.so.4
 
 time ./tools/train_net.py --gpu 0 \
   --network vgg16_convs \

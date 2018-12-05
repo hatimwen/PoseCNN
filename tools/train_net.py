@@ -72,7 +72,7 @@ def parse_args():
 
 def render_one(data_queue, intrinsic_matrix, extents, points):
 
-    synthesizer = libsynthesizer.Synthesizer(cfg.CAD, cfg.POSE)
+    synthesizer = libsynthesizer.Synthesizer(str(cfg.CAD), str(cfg.POSE))
     synthesizer.setup(cfg.TRAIN.SYN_WIDTH, cfg.TRAIN.SYN_HEIGHT)
 
     which_class = cfg.TRAIN.SYN_CLASS_INDEX

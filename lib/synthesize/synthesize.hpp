@@ -106,7 +106,7 @@ class Synthesizer
 {
  public:
 
-  Synthesizer(std::string model_file, std::string pose_file);
+  Synthesizer(char * model_file, char * pose_file);
   ~Synthesizer();
 
   void setup(int width, int height);
@@ -247,7 +247,7 @@ using namespace boost::python;
 BOOST_PYTHON_MODULE(libsynthesizer)
 {
   np::initialize();
-  class_<Synthesizer>("Synthesizer", init<std::string, std::string>())
+  class_<Synthesizer>("Synthesizer", init<char *, char *>())
     .def("setup", &Synthesizer::setup)
     .def("init_rand", &Synthesizer::init_rand)
     .def("render_one_python", &Synthesizer::render_one_python)
