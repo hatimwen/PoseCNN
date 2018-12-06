@@ -4,7 +4,7 @@ using namespace df;
 static double optEnergy(const std::vector<double> &pose, std::vector<double> &grad, void *data);
 
 
-Synthesizer::Synthesizer(std::string model_file, std::string pose_file)
+Synthesizer::Synthesizer(char * model_file, char * pose_file)
 {
   model_file_ = model_file;
   pose_file_ = pose_file;

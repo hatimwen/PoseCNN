@@ -1,5 +1,5 @@
 1. lib/neworks/vgg16_full.py 61-62: why queue something up to right in the next step dequeu it?
 2. lib/setup.py 64-71: Black Magic!?!
-3. lib/networks/network.py 62: Super or Network.__init__(self) never called? How, why?
+3. lib/networks/network.py 62: Super or Network.__init__(self) never called? How, why? Index was not correct in pycharm
 4. How to add different sizes the best? Sample object space?
 5. How do CNNs in general generalize? Color? Size? Can we tell something about the generalization ability?

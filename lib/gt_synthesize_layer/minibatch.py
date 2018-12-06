@@ -367,7 +367,7 @@ def _get_label_blob(roidb, intrinsic_matrix, data_out, num_classes, db_inds_syn,
                     meta_data['poses'] = np.reshape(meta_data['poses'], (3, 4, 1))
                 meta_data['poses'] = meta_data['poses'][:,:,ind]
                 meta_data['center'] = meta_data['center'][ind,:]
-                meta_data['box'] = meta_data['box'][ind,:]
+                # meta_data['box'] = meta_data['box'][ind,:]
 
             # im_cls, im_labels = _process_label_image(im, roidb[i]['class_colors'], roidb[i]['class_weights'])
             im_labels = im.copy()

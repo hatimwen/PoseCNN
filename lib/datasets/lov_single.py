@@ -118,6 +118,20 @@ class lov_single(datasets.imdb):
                 'Path does not exist: {}'.format(label_path)
         return label_path
 
+    # mask
+    def mask_path_at(self, i):
+        """
+        Return the absolute path to metadata i in the image sequence.
+        """
+        return self.mask_path_from_index(self.image_index[i])
+
+    def mask_path_from_index(self, index):
+        """
+        Construct an metadata path from the image's "index" identifier.
+        """
+        mask_path = os.path.join(self._data_path, index + '-object' + self._image_ext)
+        return mask_path
+
     # camera pose
     def metadata_path_at(self, i):
         """
@@ -267,6 +281,9 @@ class lov_single(datasets.imdb):
         # label path
         label_path = self.label_path_from_index(index)
 
+        # mask path
+        mask_path = self.mask_path_from_index(index)
+
         # metadata path
         metadata_path = self.metadata_path_from_index(index)
 
@@ -281,6 +298,7 @@ class lov_single(datasets.imdb):
         return {'image': image_path,
                 'depth': depth_path,
                 'label': label_path,
+                'mask': mask_path,
                 'meta_data': metadata_path,
                 'video_id': video_id,
                 'class_colors': self._class_colors,

@@ -1,0 +1,3 @@
+- Download boost 1.67
+- ./bootstrap.sh --prefix=/home/satco/thesis/code/boost1.67_c++_11_binaries --with-libraries=python
+- ./b2 -j8 cxxflags=-std=c++11 install

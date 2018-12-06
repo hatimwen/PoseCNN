@@ -41,8 +41,8 @@ endif()
 set(Sophus_INCLUDE_DIRS "/home/satco/thesis/code/Sophus")
 set(Sophus_LIBRARY_DIRS "/home/satco/thesis/code/Sophus")
 
-set(BOOST_INCLUDE_DIRS "/home/satco/thesis/code/boost1.67_binaries/include")
-set(BOOST_LIBRARY_DIRS "/home/satco/thesis/code/boost1.67_binaries/lib")
+set(BOOST_INCLUDE_DIRS "/home/satco/thesis/code/boost1.67_c++_11_binaries/include")
+set(BOOST_LIBRARY_DIRS "/home/satco/thesis/code/boost1.67_c++_11_binaries/lib")
 
 message("Project source dir: " ${PROJECT_SOURCE_DIR})
 set(xFusion_ROOT ${PROJECT_SOURCE_DIR}/../kinect_fusion)

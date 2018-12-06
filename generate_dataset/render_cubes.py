@@ -20,7 +20,7 @@ class Timer(object):  # pragma: no cover
 
 
 # size (x,y,z) location (x,y,z)
-def add_cube(size, location, quat, i):
+def add_cube(size, location, quat, i, color):
     bpy.ops.mesh.primitive_cube_add(radius=1, view_align=False, enter_editmode=False, location=location,
                                     layers=(True, False, False, False, False, False, False, False, False, False, False,
                                             False, False, False, False, False, False, False, False, False))
@@ -28,7 +28,7 @@ def add_cube(size, location, quat, i):
     bpy.context.object.dimensions = size
     bpy.context.object.rotation_mode = "QUATERNION"
     bpy.context.object.rotation_quaternion = quat
-    mat = create_new_material("Cube" + str(i) + "_mat", (0.15*i, 0, 0, 1))
+    mat = create_new_material("Cube" + str(i) + "_mat", color)
     bpy.context.object.data.materials.append(mat)
 
 
@@ -101,7 +101,11 @@ def setup_scene():
     bpy.context.scene.render.image_settings.color_mode = "BW"
 
 
-def setup(box_positions, box_sizes):
+def add_tuples_elementwise(a, b):
+    return tuple([sum(x) for x in zip(a, b)])
+
+
+def setup_boxes(box_positions, box_sizes, color, color_increasing):
     # remove subsequent cubes added by previous datasets
     objs = bpy.data.objects
     for i in range(10):
@@ -113,7 +117,9 @@ def setup(box_positions, box_sizes):
     for i, box_position in enumerate(box_positions):
         translation, quat_ros = list_to_tuples(box_position)
         quat = ros_to_blender_quat(quat_ros)
-        add_cube(box_sizes[i], translation, quat, i)
+        add_cube(box_sizes[i], translation, quat, i, color)
+        if color_increasing:
+            color = add_tuples_elementwise(color, (1/(3*255.0), 0, 0, 0))
 
 
 def list_to_tuples(l):
@@ -134,6 +140,10 @@ def read_config():
             boxes = data_dict["boxes"]
             boxes_multiple.append(boxes)
     return datasets, boxes_multiple
+
+
+def change_color():
+    return
 
 
 def main():
@@ -162,19 +172,23 @@ def main():
             box_size_tuple = (element1["x"], element2["y"], element3["z"])
             box_sizes.append(box_size_tuple)
         print(box_sizes)
-        setup(box_positions, box_sizes)
+
         print(len(camera_positions))
 
         data_base_path = create_dataset_folder(dataset)
+        start_color = (1/(3*255.0), 0, 0, 1)
 
         for j, camera_position in enumerate(camera_positions):
-            with Timer("Rendering"):
-                translation, quat_ros = list_to_tuples(camera_position)
-                quat = ros_to_blender_quat(quat_ros)
-                set_camera(translation, quat)
-                prefix = get_filename_prefix(j+1)
-                bpy.context.scene.render.filepath = os.path.join(data_base_path, prefix + "-label.png")
-                bpy.ops.render.render(use_viewport=True, write_still=True)
+            setup_boxes(box_positions, box_sizes, start_color, False)
+            translation, quat_ros = list_to_tuples(camera_position)
+            quat = ros_to_blender_quat(quat_ros)
+            set_camera(translation, quat)
+            prefix = get_filename_prefix(j+1)
+            bpy.context.scene.render.filepath = os.path.join(data_base_path, prefix + "-label.png")
+            bpy.ops.render.render(use_viewport=True, write_still=True)
+            setup_boxes(box_positions, box_sizes, start_color, True)
+            bpy.context.scene.render.filepath = os.path.join(data_base_path, prefix + "-object.png")
+            bpy.ops.render.render(use_viewport=True, write_still=True)
 
 
 if __name__ == "__main__":
