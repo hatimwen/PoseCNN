@@ -357,9 +357,9 @@ def _get_label_blob(roidb, intrinsic_matrix, data_out, num_classes, db_inds_syn,
                 I = np.where(im == roidb[i]['cls_index'])
                 im[:, :] = 0
                 im[I[0], I[1]] = 1
-                print(meta_data['cls_indexes'])
-                print("######")
-                print(roidb[i]['cls_index'])
+                #print(meta_data['cls_indexes'])
+                #print("######")
+                #print(roidb[i]['cls_index'])
                 ind = np.where(meta_data['cls_indexes'] == roidb[i]['cls_index'])[0]
                 cls_indexes_old = ind
                 meta_data['cls_indexes'] = np.ones((len(ind),), dtype=np.float32)
@@ -429,8 +429,9 @@ def _get_label_blob(roidb, intrinsic_matrix, data_out, num_classes, db_inds_syn,
                 if len(np.unique(cls_indexes)) < len(cls_indexes):
                     is_multi_instances = 1
                     # read mask image
-                    print("Mask: ")
-                    print(roidb[i]['mask'])
+                    #print("Mask: ")
+                    #print(roidb[i])
+                    #print(roidb[i]['mask'])
                     mask = pad_im(cv2.imread(roidb[i]['mask'], cv2.IMREAD_UNCHANGED), 16)
                 else:
                     is_multi_instances = 0
