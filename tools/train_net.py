@@ -10,7 +10,7 @@
 """Train a Fully Convolutional Network (FCN) on image segmentation database."""
 
 import _init_paths
-from fcn.train import get_training_roidb, train_net, train_net_det
+from fcn.train import get_training_roidb, get_val_roidb, train_net, train_net_det
 from fcn.config import cfg, cfg_from_file, get_output_dir
 from datasets.factory import get_imdb
 import argparse
@@ -258,6 +258,12 @@ def render(data_queue, intrinsic_matrix, points):
         data_queue.put(data)
 
 
+def find_smallest_divisor(x):
+    for i in [2, 3, 5, 1]:
+        if x % i == 0:
+            return i
+
+
 if __name__ == '__main__':
     args = parse_args()
 
@@ -280,6 +286,7 @@ if __name__ == '__main__':
     print imdb._symmetry
     print imdb._class_colors
     roidb = get_training_roidb(imdb)
+    roidb_val = get_val_roidb(imdb)
 
     output_dir = get_output_dir(imdb, None)
     print 'Output will be saved to `{:s}`'.format(output_dir)
@@ -299,6 +306,18 @@ if __name__ == '__main__':
     cfg.CAD = args.cad_name
     cfg.POSE = args.pose_name
     cfg.IS_TRAIN = True
+    files = ["data/LOV/indexes/000_box_train.txt", "data/LOV/indexes/000_box_val.txt"]
+    batch_sizes = []
+    iters = []
+    for file in files:
+        indexes_f = open(file)
+        indexes = indexes_f.readlines()
+        num_indexes = len(indexes)
+        batch_size = find_smallest_divisor(num_indexes)
+        batch_sizes.append(batch_size)
+        iterations = num_indexes / batch_size
+        iters.append(iterations)
+    cfg.TRAIN.IMS_PER_BATCH = batch_sizes[0]
 
     if cfg.TRAIN.SYNTHESIZE and cfg.TRAIN.SYN_ONLINE:
         import libsynthesizer
@@ -322,10 +341,10 @@ if __name__ == '__main__':
     print 'Use network `{:s}` in training'.format(args.network_name)
 
     if cfg.TRAIN.SEGMENTATION:
-        train_net(network, imdb, roidb, output_dir,
+        train_net(network, imdb, roidb, roidb_val, output_dir,
                   pretrained_model=pretrained_model,
                   pretrained_ckpt=args.pretrained_ckpt,
-                  max_iters=args.max_iters)
+                  iters_train=iters[0])
     else:
         train_net_det(network, imdb, roidb, output_dir,
                   pretrained_model=pretrained_model,

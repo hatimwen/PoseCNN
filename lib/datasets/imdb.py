@@ -21,8 +21,11 @@ class imdb(object):
         self._num_classes = 0
         self._classes = []
         self._image_index = []
+        self._image_index_val = []
         self._roidb = None
+        self._roidb_val = None
         self._roidb_handler = self.default_roidb
+        self._roidb_handler_val = self.default_roidb_val
         # Use this dict for storing dataset specific config options
         self.config = {}
 
@@ -43,12 +46,24 @@ class imdb(object):
         return self._image_index
 
     @property
+    def image_index_val(self):
+        return self._image_index_val
+
+    @property
     def roidb_handler(self):
         return self._roidb_handler
+
+    @property
+    def roidb_handler_val(self):
+        return self._roidb_handler_val
 
     @roidb_handler.setter
     def roidb_handler(self, val):
         self._roidb_handler = val
+
+    @roidb_handler_val.setter
+    def roidb_handler_val(self, val):
+        self._roidb_handler_val = val
 
     @property
     def roidb(self):
@@ -61,6 +76,18 @@ class imdb(object):
             return self._roidb
         self._roidb = self.roidb_handler()
         return self._roidb
+
+    @property
+    def roidb_val(self):
+        # A roidb is a list of dictionaries, each with the following keys:
+        #   boxes
+        #   gt_overlaps
+        #   gt_classes
+        #   flipped
+        if self._roidb_val is not None:
+            return self._roidb_val
+        self._roidb_val = self.roidb_handler_val()
+        return self._roidb_val
 
     @property
     def cache_path(self):
@@ -77,6 +104,9 @@ class imdb(object):
         raise NotImplementedError
 
     def default_roidb(self):
+        raise NotImplementedError
+
+    def default_roidb_val(self):
         raise NotImplementedError
 
     def evaluate_detections(self, all_boxes, output_dir=None):

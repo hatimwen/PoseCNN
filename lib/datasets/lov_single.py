@@ -57,7 +57,9 @@ class lov_single(datasets.imdb):
         self._class_to_ind = dict(zip(self.classes, xrange(self.num_classes)))
         self._image_ext = '.png'
         self._image_index = self._load_image_set_index()
+        self._image_index_val = self._load_image_set_index_val()
         self._roidb_handler = self.gt_roidb
+        self._roidb_handler_val = self.gt_roidb_val
 
         # statistics for computing recall
         self._count = 0
@@ -164,6 +166,22 @@ class lov_single(datasets.imdb):
             image_index = [x.rstrip('\n') for x in f.readlines()]
         return image_index
 
+    def _load_image_set_index_val(self):
+        """
+        Load the indexes listed in this dataset's image set file.
+        """
+
+        if self._image_set == 'keyframe':
+            image_set_file = os.path.join(self._lov_path, 'indexes', self._image_set + '.txt')
+        else:
+            image_set_file = os.path.join(self._lov_path, 'indexes', self._cls + '_val.txt')
+        assert os.path.exists(image_set_file), \
+                'Path does not exist: {}'.format(image_set_file)
+
+        with open(image_set_file) as f:
+            image_index = [x.rstrip('\n') for x in f.readlines()]
+        return image_index
+
     def _get_default_path(self):
         """
         Return the default path where KITTI is expected to be installed.
@@ -231,6 +249,41 @@ class lov_single(datasets.imdb):
             else:
                 self._class_weights[i] = min(2 * float(max_count) / float(count[i]), 10.0)
             print self._classes[i], self._class_weights[i]
+
+
+    def gt_roidb_val(self):
+        """
+        Return the database of ground-truth regions of interest.
+
+        This function loads/saves from/to a cache file to speed up future calls.
+        """
+
+        cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
+        if os.path.exists(cache_file):
+            with open(cache_file, 'rb') as fid:
+                roidb = cPickle.load(fid)
+            print '{} gt roidb loaded from {}'.format(self.name, cache_file)
+            print 'class weights: ', roidb[0]['class_weights']
+            return roidb
+
+        # self.compute_class_weights()
+
+        gt_roidb = [self._load_lov_annotation(index)
+                    for index in self.image_index]
+
+        if not cfg.TRAIN.SEGMENTATION:
+            # print out recall
+            for i in xrange(1, self.num_classes):
+                print '{}: Total number of boxes {:d}'.format(self.classes[i], self._num_boxes_all[i])
+                print '{}: Number of boxes covered {:d}'.format(self.classes[i], self._num_boxes_covered[i])
+                if self._num_boxes_all[i] > 0:
+                    print '{}: Recall {:f}'.format(self.classes[i], float(self._num_boxes_covered[i]) / float(self._num_boxes_all[i]))
+
+        with open(cache_file, 'wb') as fid:
+            cPickle.dump(gt_roidb, fid, cPickle.HIGHEST_PROTOCOL)
+        print 'wrote gt roidb to {}'.format(cache_file)
+
+        return gt_roidb
 
 
     def gt_roidb(self):

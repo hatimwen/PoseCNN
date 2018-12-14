@@ -202,11 +202,12 @@ class SolverWrapper(object):
         coord.request_stop()
         coord.join([t])
 
-    def train_model_vertex_pose(self, sess, train_op, loss, loss_cls, loss_vertex, loss_pose, learning_rate, max_iters, data_layer):
+    def train_model_vertex_pose(self, sess, train_op, loss, loss_cls, loss_vertex, loss_pose, learning_rate, iters_train, iters_val, data_layer, val_dict):
         """Network training loop."""
         # add summary
-        tf.summary.scalar('loss', tf.squeeze(loss))
-        merged = tf.summary.merge_all()
+        training_summary = tf.summary.scalar('loss', tf.squeeze(loss))
+
+        # merged = tf.summary.merge_all()
         train_writer = tf.summary.FileWriter(self.output_dir, sess.graph)
 
         coord = tf.train.Coordinator()
@@ -234,25 +235,48 @@ class SolverWrapper(object):
 
         last_snapshot_iter = -1
         timer = Timer()
-        for iter in range(max_iters):
+        for epoch in cfg.TRAIN.EPOCHS:
+            for iter_train in range(iters_train):
 
-            timer.tic()
-            summary, loss_value, loss_cls_value, loss_vertex_value, loss_pose_value, lr, _ = sess.run([merged, loss, loss_cls, loss_vertex, loss_pose, learning_rate, train_op])
-            train_writer.add_summary(summary, iter)
-            timer.toc()
-            
-            print 'iter: %d / %d, loss: %.4f, loss_cls: %.4f, loss_vertex: %.4f, loss_pose: %.4f, lr: %.8f,  time: %.2f' %\
-                    (iter+1, max_iters, loss_value, loss_cls_value, loss_vertex_value, loss_pose_value, lr, timer.diff)
+                timer.tic()
+                training_summary, loss_value, loss_cls_value, loss_vertex_value, loss_pose_value, lr, _ = sess.run([training_summary, loss, loss_cls, loss_vertex, loss_pose, learning_rate, train_op])
+                train_writer.add_summary(training_summary, iter)
+                timer.toc()
 
-            if (iter+1) % (10 * cfg.TRAIN.DISPLAY) == 0:
-                print 'speed: {:.3f}s / iter'.format(timer.average_time)
+                print 'iter: %d / %d, loss: %.4f, loss_cls: %.4f, loss_vertex: %.4f, loss_pose: %.4f, lr: %.8f,  time: %.2f' %\
+                        (iter_train + 1, iters_train, loss_value, loss_cls_value, loss_vertex_value, loss_pose_value, lr, timer.diff)
 
-            if (iter+1) % cfg.TRAIN.SNAPSHOT_ITERS == 0:
-                last_snapshot_iter = iter
-                self.snapshot(sess, iter)
+                if (iter_train+1) % (10 * cfg.TRAIN.DISPLAY) == 0:
+                    print 'speed: {:.3f}s / iter'.format(timer.average_time)
 
-        if last_snapshot_iter != iter:
-            self.snapshot(sess, iter)
+            self.snapshot(sess, iter_train)
+
+            losses_val = []
+            t = threading.Thread(target=load_and_enqueue_val, args=(sess, self.net, data_layer, coord))
+            t.start()
+
+            for iter_val in range(iters_val):
+
+                timer.tic()
+                # loss_val = val_dict['loss_val']
+                # loss_cls_val = val_dict['loss_cls_val']
+                # loss_vertex_val = val_dict['loss_vertex_val']
+                # loss_pose_val = val_dict['lose_pose_val']
+                loss_value, loss_cls_value, loss_vertex_value, loss_pose_value, lr = sess.run(
+                    [loss, loss_cls, loss_vertex, loss_pose, learning_rate])
+                losses_val.append(loss_value)
+                timer.toc()
+
+                if iters_val % 100 == 0:
+                    print 'iter: %d / %d, loss: %.4f, loss_cls: %.4f, loss_vertex: %.4f, loss_pose: %.4f, lr: %.8f,  time: %.2f' % \
+                          (iter_val + 1, iters_val, loss_value, loss_cls_value, loss_vertex_value, loss_pose_value, lr,
+                           timer.diff)
+
+                    if (iter_val + 1) % (10 * cfg.TRAIN.DISPLAY) == 0:
+                        print 'speed: {:.3f}s / iter'.format(timer.average_time)
+            loss_mean_val = np.mean(losses_val)
+            validation_summary = tf.summary.scalar('loss', loss_mean_val)
+            train_writer.add_summary(validation_summary, iter_train)
 
         sess.run(self.net.close_queue_op)
         coord.request_stop()
@@ -379,6 +403,73 @@ def get_training_roidb(imdb):
     return imdb.roidb
 
 
+def get_val_roidb(imdb):
+    """Returns a roidb (Region of Interest database) for use in training."""
+    if cfg.TRAIN.USE_FLIPPED:
+        print 'Appending horizontally-flipped training examples...'
+        imdb.append_flipped_images()
+        print 'done'
+
+    return imdb.roidb_val
+
+
+def load_and_enqueue_val(sess, net, data_layer, coord):
+    iter = 0
+    while not coord.should_stop():
+        data_layer._validation = True
+        blobs = data_layer.forward(iter)
+        # blobs = data_layer.forward()
+        iter += 1
+
+        if cfg.INPUT == 'RGBD':
+            data_blob = blobs['data_image_color']
+            data_p_blob = blobs['data_image_depth']
+        elif cfg.INPUT == 'COLOR':
+            data_blob = blobs['data_image_color']
+        elif cfg.INPUT == 'DEPTH':
+            data_blob = blobs['data_image_depth']
+        elif cfg.INPUT == 'NORMAL':
+            data_blob = blobs['data_image_normal']
+
+        if cfg.TRAIN.SINGLE_FRAME:
+            if cfg.TRAIN.SEGMENTATION:
+                if cfg.INPUT == 'RGBD':
+                    if cfg.TRAIN.VERTEX_REG_2D or cfg.TRAIN.VERTEX_REG_3D:
+                        feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: 0.5, \
+                                     net.vertex_targets: blobs['data_vertex_targets'], net.vertex_weights: blobs['data_vertex_weights'], \
+                                     net.poses: blobs['data_pose'], net.extents: blobs['data_extents'], net.meta_data: blobs['data_meta_data']}
+                    else:
+                        feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: 0.5}
+                else:
+                    if cfg.TRAIN.VERTEX_REG_2D or cfg.TRAIN.VERTEX_REG_3D:
+                        feed_dict = {net.data: data_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: 0.5, \
+                                     net.vertex_targets: blobs['data_vertex_targets'], net.vertex_weights: blobs['data_vertex_weights'], \
+                                     net.poses: blobs['data_pose'], net.extents: blobs['data_extents'], net.meta_data: blobs['data_meta_data'], \
+                                     net.points: blobs['data_points'], net.symmetry: blobs['data_symmetry']}
+                    else:
+                        feed_dict = {net.data: data_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: 0.5}
+            else:
+                if cfg.INPUT == 'RGBD':
+                    feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.im_info: blobs['data_im_info'], \
+                                 net.gt_boxes: blobs['data_gt_boxes'], net.poses: blobs['data_pose'], \
+                                 net.points: blobs['data_points'], net.symmetry: blobs['data_symmetry'], net.keep_prob: 0.5}
+                else:
+                    feed_dict = {net.data: data_blob, net.im_info: blobs['data_im_info'], \
+                                 net.gt_boxes: blobs['data_gt_boxes'], net.poses: blobs['data_pose'], \
+                                 net.points: blobs['data_points'], net.symmetry: blobs['data_symmetry'], net.keep_prob: 0.5}
+        else:
+            if cfg.INPUT == 'RGBD':
+                feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.gt_label_2d: blobs['data_label'], \
+                             net.depth: blobs['data_depth'], net.meta_data: blobs['data_meta_data'], \
+                             net.state: blobs['data_state'], net.weights: blobs['data_weights'], net.points: blobs['data_points'], net.keep_prob: 0.5}
+            else:
+                feed_dict = {net.data: data_blob, net.gt_label_2d: blobs['data_label'], \
+                             net.depth: blobs['data_depth'], net.meta_data: blobs['data_meta_data'], \
+                             net.state: blobs['data_state'], net.weights: blobs['data_weights'], net.points: blobs['data_points'], net.keep_prob: 0.5}
+
+        sess.run(net.enqueue_op, feed_dict=feed_dict)
+
+
 def load_and_enqueue(sess, net, data_layer, coord):
 
     iter = 0
@@ -475,10 +566,11 @@ def loss_quaternion(pose_pred, pose_targets, pose_weights):
     return loss
 
 
-def train_net(network, imdb, roidb, output_dir, pretrained_model=None, pretrained_ckpt=None, max_iters=40000):
+def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None, pretrained_ckpt=None, iters_train=40000, iters_val=10000):
     """Train a Fast R-CNN network."""
 
     loss_regu = tf.add_n(tf.losses.get_regularization_losses(), 'regu')
+    loss_regu_val = tf.add_n(tf.losses.get_regularization_losses(), 'regu2')
     if cfg.TRAIN.SINGLE_FRAME:
         # classification loss
         if cfg.NETWORK == 'FCN8VGG':
@@ -488,14 +580,21 @@ def train_net(network, imdb, roidb, output_dir, pretrained_model=None, pretraine
         else:
             if cfg.TRAIN.VERTEX_REG_2D or cfg.TRAIN.VERTEX_REG_3D:
                 scores = network.get_output('prob')
+                scores_val = network.get_output2('prob')
                 labels = network.get_output('gt_label_weight')
+                labels_val = network.get_output2('gt_label_weight')
                 loss_cls = loss_cross_entropy_single_frame(scores, labels)
+                loss_cls_val = loss_cross_entropy_single_frame(scores_val, labels_val)
 
                 vertex_pred = network.get_output('vertex_pred')
+                vertex_pred_val = network.get_output2('vertex_pred')
                 vertex_targets = network.get_output('vertex_targets')
+                vertex_targets_val = network.get_output2('vertex_targets')
                 vertex_weights = network.get_output('vertex_weights')
+                vertex_weights_val = network.get_output2('vertex_weights')
                 # loss_vertex = tf.div( tf.reduce_sum(tf.multiply(vertex_weights, tf.abs(tf.subtract(vertex_pred, vertex_targets)))), tf.reduce_sum(vertex_weights) + 1e-10 )
                 loss_vertex = cfg.TRAIN.VERTEX_W * smooth_l1_loss_vertex(vertex_pred, vertex_targets, vertex_weights)
+                loss_vertex_val = cfg.TRAIN.VERTEX_W * smooth_l1_loss_vertex(vertex_pred_val, vertex_targets_val, vertex_weights_val)
 
                 if cfg.TRAIN.POSE_REG:
                     # pose_pred = network.get_output('poses_pred')
@@ -504,6 +603,7 @@ def train_net(network, imdb, roidb, output_dir, pretrained_model=None, pretraine
                     # loss_pose = cfg.TRAIN.POSE_W * tf.div( tf.reduce_sum(tf.multiply(pose_weights, tf.abs(tf.subtract(pose_pred, pose_targets)))), tf.reduce_sum(pose_weights) )
                     # loss_pose = cfg.TRAIN.POSE_W * loss_quaternion(pose_pred, pose_targets, pose_weights)
                     loss_pose = cfg.TRAIN.POSE_W * network.get_output('loss_pose')[0]
+                    loss_pose_val = cfg.TRAIN.POSE_W * network.get_output2('loss_pose')[0]
 
                     if cfg.TRAIN.ADAPT:
                         domain_score = network.get_output("domain_score")
@@ -513,6 +613,7 @@ def train_net(network, imdb, roidb, output_dir, pretrained_model=None, pretraine
                         loss = loss_cls + loss_vertex + loss_pose + loss_domain + loss_regu 
                     else:
                         loss = loss_cls + loss_vertex + loss_pose + loss_regu
+                        loss_val = loss_cls_val + loss_vertex_val + loss_pose_val + loss_regu_val
                 else:
                     loss = loss_cls + loss_vertex + loss_regu
             else:
@@ -532,6 +633,13 @@ def train_net(network, imdb, roidb, output_dir, pretrained_model=None, pretraine
                                                cfg.TRAIN.STEPSIZE, 0.1, staircase=True)
     momentum = cfg.TRAIN.MOMENTUM
     train_op = tf.train.MomentumOptimizer(learning_rate, momentum).minimize(loss, global_step=global_step)
+    val_op = tf.train.MomentumOptimizer(learning_rate, momentum).minimize(loss_val, global_step=global_step)
+    val_dict = {"val_op": val_op,
+                "loss_val": loss_val,
+                "loss_cls_vall": loss_cls_val,
+                "loss_vertex_val": loss_vertex_val,
+                "loss_pose": loss_pose_val
+                }
     
     #config = tf.ConfigProto()
     #config.gpu_options.per_process_gpu_memory_fraction = 0.85
@@ -541,7 +649,7 @@ def train_net(network, imdb, roidb, output_dir, pretrained_model=None, pretraine
 
         # data layer
         if cfg.TRAIN.SINGLE_FRAME:
-            data_layer = GtSynthesizeLayer(roidb, imdb.num_classes, imdb._extents, imdb._points_all, imdb._symmetry, imdb.cache_path, imdb.name, imdb.data_queue, cfg.CAD, cfg.POSE)
+            data_layer = GtSynthesizeLayer(roidb, roidb_val, imdb.num_classes, imdb._extents, imdb._points_all, imdb._symmetry, imdb.cache_path, imdb.name, imdb.data_queue, cfg.CAD, cfg.POSE)
         else:
             data_layer = GtDataLayer(roidb, imdb.num_classes)
 
@@ -552,13 +660,13 @@ def train_net(network, imdb, roidb, output_dir, pretrained_model=None, pretraine
             if cfg.TRAIN.POSE_REG:
                 if cfg.TRAIN.ADAPT:
                     sw.train_model_vertex_pose_adapt(sess, train_op, loss, loss_cls, loss_vertex, loss_pose, \
-                        loss_domain, label_domain, domain_label, learning_rate, max_iters, data_layer)
+                                                     loss_domain, label_domain, domain_label, learning_rate, iters_train, data_layer)
                 else:
-                    sw.train_model_vertex_pose(sess, train_op, loss, loss_cls, loss_vertex, loss_pose, learning_rate, max_iters, data_layer)
+                    sw.train_model_vertex_pose(sess, train_op, loss, loss_cls, loss_vertex, loss_pose, learning_rate, iters_train, iters_val, data_layer, val_dict)
             else:
-                sw.train_model_vertex(sess, train_op, loss, loss_cls, loss_vertex, loss_regu, learning_rate, max_iters, data_layer)
+                sw.train_model_vertex(sess, train_op, loss, loss_cls, loss_vertex, loss_regu, learning_rate, iters_train, data_layer)
         else:
-            sw.train_model(sess, train_op, loss, learning_rate, max_iters, data_layer)
+            sw.train_model(sess, train_op, loss, learning_rate, iters_train, data_layer)
         print 'done solving'
 
 def smooth_l1_loss_vertex(vertex_pred, vertex_targets, vertex_weights, sigma=1.0):

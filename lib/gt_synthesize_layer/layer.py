@@ -20,9 +20,10 @@ import scipy.io
 class GtSynthesizeLayer(object):
     """FCN data layer used for training."""
 
-    def __init__(self, roidb, num_classes, extents, points, symmetry, cache_path, name, data_queue, model_file, pose_file):
+    def __init__(self, roidb, roidb_val, num_classes, extents, points, symmetry, cache_path, name, data_queue, model_file, pose_file):
         """Set the roidb to be used by this layer during training."""
         self._roidb = roidb
+        self._roidb_val = roidb_val
         self._num_classes = num_classes
         self._extents = extents
         self._points = points
@@ -36,11 +37,14 @@ class GtSynthesizeLayer(object):
         self._build_background_images()
         self._build_background_depth_images()
         self._read_camera_parameters()
+        self._validation = False
 
     def _shuffle_roidb_inds(self):
         """Randomly permute the training roidb."""
         self._perm = np.random.permutation(np.arange(len(self._roidb)))
+        self._perm_val = np.random.permutation(np.arange(len(self._roidb_val)))
         self._cur = 0
+        self._cur_val = 0
 
     def _shuffle_syn_inds(self):
         self._perm_syn = np.random.permutation(np.arange(cfg.TRAIN.SYNNUM))
@@ -53,23 +57,42 @@ class GtSynthesizeLayer(object):
     def _get_next_minibatch_inds(self, is_syn, is_adapt):
         """Return the roidb indices for the next minibatch."""
 
-        db_inds = self._perm[self._cur:self._cur + cfg.TRAIN.IMS_PER_BATCH]
-        if is_syn == 0 and is_adapt == 0:
-            self._cur += cfg.TRAIN.IMS_PER_BATCH
-            if self._cur + cfg.TRAIN.IMS_PER_BATCH >= len(self._roidb):
+        if self._validation:
+            db_inds = self._perm_val[self._cur_val:self._cur_val + cfg.TRAIN.IMS_PER_BATCH]
+            if self._cur_val + cfg.TRAIN.IMS_PER_BATCH >= len(self._roidb_val):
                 self._shuffle_roidb_inds()
+            if is_syn == 0 and is_adapt == 0:
+                self._cur += cfg.TRAIN.IMS_PER_BATCH
 
-        db_inds_syn = self._perm_syn[self._cur_syn:self._cur_syn + cfg.TRAIN.IMS_PER_BATCH]
-        if is_syn:
-            self._cur_syn += cfg.TRAIN.IMS_PER_BATCH
-            if self._cur_syn + cfg.TRAIN.IMS_PER_BATCH >= cfg.TRAIN.SYNNUM:
-                self._shuffle_syn_inds()
+            db_inds_syn = self._perm_syn[self._cur_syn:self._cur_syn + cfg.TRAIN.IMS_PER_BATCH]
+            if is_syn:
+                self._cur_syn += cfg.TRAIN.IMS_PER_BATCH
+                if self._cur_syn + cfg.TRAIN.IMS_PER_BATCH >= cfg.TRAIN.SYNNUM:
+                    self._shuffle_syn_inds()
 
-        db_inds_adapt = self._perm_adapt[self._cur_adapt:self._cur_adapt + cfg.TRAIN.IMS_PER_BATCH]
-        if is_adapt:
-            self._cur_adapt += cfg.TRAIN.IMS_PER_BATCH
-            if self._cur_adapt + cfg.TRAIN.IMS_PER_BATCH >= cfg.TRAIN.ADAPT_NUM:
-                self._shuffle_adapt_inds()
+            db_inds_adapt = self._perm_adapt[self._cur_adapt:self._cur_adapt + cfg.TRAIN.IMS_PER_BATCH]
+            if is_adapt:
+                self._cur_adapt += cfg.TRAIN.IMS_PER_BATCH
+                if self._cur_adapt + cfg.TRAIN.IMS_PER_BATCH >= cfg.TRAIN.ADAPT_NUM:
+                    self._shuffle_adapt_inds()
+        else:
+            db_inds = self._perm[self._cur:self._cur + cfg.TRAIN.IMS_PER_BATCH]
+            if is_syn == 0 and is_adapt == 0:
+                self._cur += cfg.TRAIN.IMS_PER_BATCH
+                if self._cur + cfg.TRAIN.IMS_PER_BATCH >= len(self._roidb):
+                    self._shuffle_roidb_inds()
+
+            db_inds_syn = self._perm_syn[self._cur_syn:self._cur_syn + cfg.TRAIN.IMS_PER_BATCH]
+            if is_syn:
+                self._cur_syn += cfg.TRAIN.IMS_PER_BATCH
+                if self._cur_syn + cfg.TRAIN.IMS_PER_BATCH >= cfg.TRAIN.SYNNUM:
+                    self._shuffle_syn_inds()
+
+            db_inds_adapt = self._perm_adapt[self._cur_adapt:self._cur_adapt + cfg.TRAIN.IMS_PER_BATCH]
+            if is_adapt:
+                self._cur_adapt += cfg.TRAIN.IMS_PER_BATCH
+                if self._cur_adapt + cfg.TRAIN.IMS_PER_BATCH >= cfg.TRAIN.ADAPT_NUM:
+                    self._shuffle_adapt_inds()
 
         return db_inds, db_inds_syn, db_inds_adapt
 
