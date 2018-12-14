@@ -566,11 +566,17 @@ def _vote_centers(im_label, cls_indexes, centers, poses, num_classes, extents):
     for i in xrange(1, num_classes):
         y, x = np.where(im_label == i)
         I = np.where(im_label == i)
-        ind = np.where(cls_indexes == i)[0]
-        if len(x) > 0 and len(ind) > 0:
-            center[0] = centers[ind, 0]
-            center[1] = centers[ind, 1]
-            z = poses[2, 3, ind]
+        #ind = np.where(cls_indexes == i)[0]
+        print(cls_indexes)
+        #print(ind)
+        if len(x) > 0:
+            print(centers)
+            print(centers.shape)
+            print("#####")
+            print(centers[i, 0])
+            center[0] = centers[i, 0]
+            center[1] = centers[i, 1]
+            z = poses[2, 3, i]
             R = np.tile(center, (1, len(x))) - np.vstack((x, y))
             # compute the norm
             N = np.linalg.norm(R, axis=0) + 1e-10
@@ -731,7 +737,8 @@ def vis_segmentations_vertmaps(im, im_depth, im_labels, im_labels_gt, colors, ce
                     x3d[0, :] = points[i,:,0]
                     x3d[1, :] = points[i,:,1]
                     x3d[2, :] = points[i,:,2]
-
+                if i == 0:
+                    i = 64
                 # projection
                 ind = np.where(cls_indexes == i)[0][0]
                 RT = poses_gt[:, :, ind]
@@ -1281,7 +1288,7 @@ def test_net_single_frame(sess, net, imdb, weights_filename, model_filename):
                 im_depth = np.zeros((rgba.shape[0], rgba.shape[1]), dtype=np.float32)
 
             # read label image
-            labels_gt = pad_im(cv2.imread(imdb.label_path_at(i), cv2.IMREAD_UNCHANGED), 16)
+            labels_gt = pad_im(cv2.imread(imdb.mask_path_at(i), cv2.IMREAD_UNCHANGED), 16)
 
             # load meta data
             meta_data = scipy.io.loadmat(imdb.metadata_path_at(i))
