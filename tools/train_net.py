@@ -344,7 +344,8 @@ if __name__ == '__main__':
         train_net(network, imdb, roidb, roidb_val, output_dir,
                   pretrained_model=pretrained_model,
                   pretrained_ckpt=args.pretrained_ckpt,
-                  iters_train=iters[0])
+                  iters_train=iters[0],
+                  iters_val=iters[1])
     else:
         train_net_det(network, imdb, roidb, output_dir,
                   pretrained_model=pretrained_model,

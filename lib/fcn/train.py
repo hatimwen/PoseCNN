@@ -202,7 +202,7 @@ class SolverWrapper(object):
         coord.request_stop()
         coord.join([t])
 
-    def train_model_vertex_pose(self, sess, train_op, loss, loss_cls, loss_vertex, loss_pose, learning_rate, iters_train, iters_val, data_layer, val_dict):
+    def train_model_vertex_pose(self, sess, train_op, loss, loss_cls, loss_vertex, loss_pose, learning_rate, iters_train, iters_val, data_layer):
         """Network training loop."""
         # add summary
         training_summary = tf.summary.scalar('loss', tf.squeeze(loss))
@@ -633,13 +633,13 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
                                                cfg.TRAIN.STEPSIZE, 0.1, staircase=True)
     momentum = cfg.TRAIN.MOMENTUM
     train_op = tf.train.MomentumOptimizer(learning_rate, momentum).minimize(loss, global_step=global_step)
-    val_op = tf.train.MomentumOptimizer(learning_rate, momentum).minimize(loss_val, global_step=global_step)
-    val_dict = {"val_op": val_op,
-                "loss_val": loss_val,
-                "loss_cls_vall": loss_cls_val,
-                "loss_vertex_val": loss_vertex_val,
-                "loss_pose": loss_pose_val
-                }
+    # val_op = tf.train.MomentumOptimizer(learning_rate, momentum).minimize(loss_val, global_step=global_step)
+    # val_dict = {"val_op": val_op,
+    #             "loss_val": loss_val,
+    #             "loss_cls_vall": loss_cls_val,
+    #             "loss_vertex_val": loss_vertex_val,
+    #             "loss_pose": loss_pose_val
+    #             }
     
     #config = tf.ConfigProto()
     #config.gpu_options.per_process_gpu_memory_fraction = 0.85
@@ -662,7 +662,7 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
                     sw.train_model_vertex_pose_adapt(sess, train_op, loss, loss_cls, loss_vertex, loss_pose, \
                                                      loss_domain, label_domain, domain_label, learning_rate, iters_train, data_layer)
                 else:
-                    sw.train_model_vertex_pose(sess, train_op, loss, loss_cls, loss_vertex, loss_pose, learning_rate, iters_train, iters_val, data_layer, val_dict)
+                    sw.train_model_vertex_pose(sess, train_op, loss, loss_cls, loss_vertex, loss_pose, learning_rate, iters_train, iters_val, data_layer)
             else:
                 sw.train_model_vertex(sess, train_op, loss, loss_cls, loss_vertex, loss_regu, learning_rate, iters_train, data_layer)
         else:
