@@ -316,6 +316,8 @@ if __name__ == '__main__':
         batch_size = find_smallest_divisor(num_indexes)
         batch_sizes.append(batch_size)
         iterations = num_indexes / batch_size
+        print(file, "length_data, batch_size, iterations")
+        print(num_indexes, batch_size, iterations)
         iters.append(iterations)
     cfg.TRAIN.IMS_PER_BATCH = batch_sizes[0]
 

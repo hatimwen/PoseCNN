@@ -205,7 +205,9 @@ class SolverWrapper(object):
     def train_model_vertex_pose(self, sess, train_op, loss, loss_cls, loss_vertex, loss_pose, learning_rate, iters_train, iters_val, data_layer):
         """Network training loop."""
         # add summary
-        training_summary = tf.summary.scalar('loss', tf.squeeze(loss))
+        # training_summary = tf.summary.scalar('loss', tf.squeeze(loss))
+        tf.summary.scalar('loss', tf.squeeze(loss))
+        merged = tf.summary.merge_all()
 
         # merged = tf.summary.merge_all()
         train_writer = tf.summary.FileWriter(self.output_dir, sess.graph)
@@ -235,12 +237,13 @@ class SolverWrapper(object):
 
         last_snapshot_iter = -1
         timer = Timer()
-        for epoch in cfg.TRAIN.EPOCHS:
+        epochs = 30
+        for epoch in range(epochs):
             for iter_train in range(iters_train):
 
                 timer.tic()
-                training_summary, loss_value, loss_cls_value, loss_vertex_value, loss_pose_value, lr, _ = sess.run([training_summary, loss, loss_cls, loss_vertex, loss_pose, learning_rate, train_op])
-                train_writer.add_summary(training_summary, iter)
+                summary, loss_value, loss_cls_value, loss_vertex_value, loss_pose_value, lr, _ = sess.run([merged, loss, loss_cls, loss_vertex, loss_pose, learning_rate, train_op])
+                train_writer.add_summary(summary, iter_train)
                 timer.toc()
 
                 print 'iter: %d / %d, loss: %.4f, loss_cls: %.4f, loss_vertex: %.4f, loss_pose: %.4f, lr: %.8f,  time: %.2f' %\
@@ -580,21 +583,21 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
         else:
             if cfg.TRAIN.VERTEX_REG_2D or cfg.TRAIN.VERTEX_REG_3D:
                 scores = network.get_output('prob')
-                scores_val = network.get_output2('prob')
+                # scores_val = network.get_output2('prob')
                 labels = network.get_output('gt_label_weight')
-                labels_val = network.get_output2('gt_label_weight')
+                # labels_val = network.get_output2('gt_label_weight')
                 loss_cls = loss_cross_entropy_single_frame(scores, labels)
-                loss_cls_val = loss_cross_entropy_single_frame(scores_val, labels_val)
+                # loss_cls_val = loss_cross_entropy_single_frame(scores_val, labels_val)
 
                 vertex_pred = network.get_output('vertex_pred')
-                vertex_pred_val = network.get_output2('vertex_pred')
+                # vertex_pred_val = network.get_output2('vertex_pred')
                 vertex_targets = network.get_output('vertex_targets')
-                vertex_targets_val = network.get_output2('vertex_targets')
+                # vertex_targets_val = network.get_output2('vertex_targets')
                 vertex_weights = network.get_output('vertex_weights')
-                vertex_weights_val = network.get_output2('vertex_weights')
+                # vertex_weights_val = network.get_output2('vertex_weights')
                 # loss_vertex = tf.div( tf.reduce_sum(tf.multiply(vertex_weights, tf.abs(tf.subtract(vertex_pred, vertex_targets)))), tf.reduce_sum(vertex_weights) + 1e-10 )
                 loss_vertex = cfg.TRAIN.VERTEX_W * smooth_l1_loss_vertex(vertex_pred, vertex_targets, vertex_weights)
-                loss_vertex_val = cfg.TRAIN.VERTEX_W * smooth_l1_loss_vertex(vertex_pred_val, vertex_targets_val, vertex_weights_val)
+                # loss_vertex_val = cfg.TRAIN.VERTEX_W * smooth_l1_loss_vertex(vertex_pred_val, vertex_targets_val, vertex_weights_val)
 
                 if cfg.TRAIN.POSE_REG:
                     # pose_pred = network.get_output('poses_pred')
@@ -603,7 +606,7 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
                     # loss_pose = cfg.TRAIN.POSE_W * tf.div( tf.reduce_sum(tf.multiply(pose_weights, tf.abs(tf.subtract(pose_pred, pose_targets)))), tf.reduce_sum(pose_weights) )
                     # loss_pose = cfg.TRAIN.POSE_W * loss_quaternion(pose_pred, pose_targets, pose_weights)
                     loss_pose = cfg.TRAIN.POSE_W * network.get_output('loss_pose')[0]
-                    loss_pose_val = cfg.TRAIN.POSE_W * network.get_output2('loss_pose')[0]
+                    # loss_pose_val = cfg.TRAIN.POSE_W * network.get_output2('loss_pose')[0]
 
                     if cfg.TRAIN.ADAPT:
                         domain_score = network.get_output("domain_score")
@@ -613,7 +616,7 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
                         loss = loss_cls + loss_vertex + loss_pose + loss_domain + loss_regu 
                     else:
                         loss = loss_cls + loss_vertex + loss_pose + loss_regu
-                        loss_val = loss_cls_val + loss_vertex_val + loss_pose_val + loss_regu_val
+                        # loss_val = loss_cls_val + loss_vertex_val + loss_pose_val + loss_regu_val
                 else:
                     loss = loss_cls + loss_vertex + loss_regu
             else:
