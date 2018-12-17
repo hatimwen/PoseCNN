@@ -28,7 +28,7 @@ def add_cube(size, location, quat, i, color):
     bpy.context.object.dimensions = size
     bpy.context.object.rotation_mode = "QUATERNION"
     bpy.context.object.rotation_quaternion = quat
-    mat = create_new_material("Cube" + str(i) + "_mat", color)
+    mat = get_material("Cube_" + str(i) + "_" + str(color) + "_mat", color)
     bpy.context.object.data.materials.append(mat)
 
 
@@ -38,24 +38,11 @@ def set_camera(location, quat):
     camera.rotation_quaternion = quat
 
 
-def create_new_material(name, color):
+def get_material(name, color):
     bpy.data.materials.new(name=name)
-    # get material
     mat = bpy.data.materials[name]
-    # remove all previous shaders
-    mat.use_nodes = True
-    nodes = mat.node_tree.nodes
-    for node in nodes:
-        nodes.remove(node)
-
-    # add emission node
-    node_emission = nodes.new(type='ShaderNodeEmission')
-    node_emission.inputs[0].default_value = color  # color rgba
-    node_emission.inputs[1].default_value = 1.0  # strength
-
-    node_output = nodes.new(type='ShaderNodeOutputMaterial')
-    links = mat.node_tree.links
-    link = links.new(node_emission.outputs[0], node_output.inputs[0])
+    mat.use_shadeless = True
+    mat.diffuse_color = color
     return mat
 
 
@@ -94,7 +81,7 @@ def setup_speedup():
 
 def setup_scene():
     # needed for rendering the whole cube with one color
-    bpy.data.scenes['Scene'].render.engine = "CYCLES"
+    # bpy.data.scenes['Scene'].render.engine = "CYCLES"
     bpy.context.scene.render.resolution_x = 640
     bpy.context.scene.render.resolution_y = 480
     bpy.context.scene.render.resolution_percentage = 100
@@ -105,7 +92,25 @@ def add_tuples_elementwise(a, b):
     return tuple([sum(x) for x in zip(a, b)])
 
 
-def setup_boxes(box_positions, box_sizes, color, color_increasing):
+def print_cube_colors():
+    for object_name in sorted(bpy.data.objects.keys()):
+        if object_name.startswith("Cube"):
+            cube = bpy.data.objects[object_name]
+            mat = cube.active_material
+            print(object_name, mat.diffuse_color)
+
+
+def change_boxes_color(color, increase_color):
+    for object_name in sorted(bpy.data.objects.keys()):
+        if object_name.startswith("Cube"):
+            cube = bpy.data.objects[object_name]
+            mat = cube.active_material
+            mat.diffuse_color = color
+            if increase_color:
+                color = add_tuples_elementwise(color, (1 / (3 * 255.0), 0, 0))
+
+
+def setup_boxes(box_positions, box_sizes, color):
     # remove subsequent cubes added by previous datasets
     objs = bpy.data.objects
     for i in range(10):
@@ -118,8 +123,6 @@ def setup_boxes(box_positions, box_sizes, color, color_increasing):
         translation, quat_ros = list_to_tuples(box_position)
         quat = ros_to_blender_quat(quat_ros)
         add_cube(box_sizes[i], translation, quat, i, color)
-        if color_increasing:
-            color = add_tuples_elementwise(color, (1/(3*255.0), 0, 0, 0))
 
 
 def list_to_tuples(l):
@@ -140,10 +143,6 @@ def read_config():
             boxes = data_dict["boxes"]
             boxes_multiple.append(boxes)
     return datasets, boxes_multiple
-
-
-def change_color():
-    return
 
 
 def main():
@@ -176,19 +175,20 @@ def main():
         print(len(camera_positions))
 
         data_base_path = create_dataset_folder(dataset)
-        start_color = (1/(3*255.0), 0, 0, 1)
+        start_color = (1/(3*255.0), 0, 0)
+        setup_boxes(box_positions, box_sizes, start_color)
 
         for j, camera_position in enumerate(camera_positions):
-            setup_boxes(box_positions, box_sizes, start_color, False)
             translation, quat_ros = list_to_tuples(camera_position)
             quat = ros_to_blender_quat(quat_ros)
             set_camera(translation, quat)
             prefix = get_filename_prefix(j+1)
             bpy.context.scene.render.filepath = os.path.join(data_base_path, prefix + "-label.png")
             bpy.ops.render.render(use_viewport=True, write_still=True)
-            setup_boxes(box_positions, box_sizes, start_color, True)
+            change_boxes_color(start_color, True)
             bpy.context.scene.render.filepath = os.path.join(data_base_path, prefix + "-object.png")
             bpy.ops.render.render(use_viewport=True, write_still=True)
+            change_boxes_color(start_color, False)
 
 
 if __name__ == "__main__":
