@@ -262,7 +262,15 @@ def get_output_dir(imdb, net):
     A canonical path is built using the name from an imdb and a network
     (if not None).
     """
-    path = osp.abspath(osp.join(__C.ROOT_DIR, 'output', __C.EXP_DIR, imdb.name))
+    runs = 0
+    with open(os.path.join(__C.ROOT_DIR, "runs.txt"), "r") as runs_file:
+        runs = int(runs_file.readline().rstrip())
+
+    path = osp.abspath(osp.join(__C.ROOT_DIR, 'output', __C.EXP_DIR, imdb.name, "run" + str(runs)))
+
+    with open(os.path.join(__C.ROOT_DIR, "runs.txt"), "w") as runs_file:
+        runs_file.write(str(runs+1) + "\n")
+
     if net is None:
         return path
     else:

@@ -336,6 +336,10 @@ class SolverWrapper(object):
             loss_pose_val_summary = sess.run(loss_pose_val_op, feed_dict={loss_pose_placeholder: np.mean(losses_pose_val)})
             loss_regu_val_summary = sess.run(loss_regu_val_op, feed_dict={loss_regu_placeholder: np.mean(losses_regu_val)})
             val_writer.add_summary(loss_val_summary, iters_train * (epoch + 1))
+            val_writer.add_summary(loss_cls_val_summary, iters_train * (epoch + 1))
+            val_writer.add_summary(loss_vertex_val_summary, iters_train * (epoch + 1))
+            val_writer.add_summary(loss_pose_val_summary, iters_train * (epoch + 1))
+            val_writer.add_summary(loss_regu_val_summary, iters_train * (epoch + 1))
 
         sess.run(self.net.close_queue_op)
 
