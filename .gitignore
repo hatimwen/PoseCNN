@@ -40,3 +40,7 @@ experiments/scripts/lov_color_2d_train_full.sh
 lib/setup.py
 generate_dataset/config/
 data/LOV/trainval.txt
+trained_nets/
+
+data/LOV/indexes/000_box_train (copy).txt
+data/LOV/indexes/000_box_val (copy).txt
