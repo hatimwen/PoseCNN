@@ -48,3 +48,7 @@ data/LOV/indexes/000_box_train (copy).txt
 data/LOV/indexes/000_box_val (copy).txt
 
 runs.txt
+
+.cproject
+.project
+PoseCNN.cu
