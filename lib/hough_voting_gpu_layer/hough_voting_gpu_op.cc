@@ -366,6 +366,7 @@ class HoughvotinggpuOp<Eigen::GpuDevice, T> : public OpKernel {
     int* num_rois_device = num_rois_tensor_tmp.flat<int>().data();
     reset_outputs(top_box, top_pose, top_target, top_weight, top_domain, num_rois_device, num_classes);
 
+    std::cout << "Batch size: " << batch_size << std::endl;
     for (int n = 0; n < batch_size; n++)
     {
       const int* labelmap = bottom_label.flat<int>().data() + n * height * width;

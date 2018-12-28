@@ -1,0 +1,148 @@
+- simplify code where possible 
+
+	r = np.random.randint(cfg.TRAIN.SYN_RATIO+1, size=1)[0]
+
+	vmin = -extents[i] / 2
+	        vmax = extents[i] / 2
+	        if vmax - vmin > 0:
+	            a = 1.0 / (vmax - vmin)
+	            b = -1.0 * vmin / (vmax - vmin)
+	        else:
+	            a = 0
+	            b = 0
+	        vertmap[index[0], index[1], i] = a * vertmap[index[0], index[1], i] + b
+
+- Don't have configs options that are not actual options and the program breaks if you use other options. Then they should be hardcoded if changing config options make the program break
+	
+	cfg.TRAIN.SYNTHESIZE: False does not work for many scripts
+
+- Inconsistent matrix usage: Once the objects are stacked in the last dimension othertimes they are stacked in the first dimension
+
+	meta_data['poses'] = meta_data['poses'][:,:,ind]
+	meta_data['center'] = meta_data['center'][ind,:]
+
+- Unneccessary code: When working only with a strict subset also including the superset
+
+	(mask == cls_indexes_old[i]+1) & (im_label == cls)
+
+- Make it very hard to add validation data
+
+	See all the code and the architecture
+
+- Split configs into multiple places
+
+	the .sh files have some config options and the .yaml files have some other options and the source code has some other options
+
+- Useless functions that only relay data
+
+    def forward(self, iter):
+        """Get blobs and copy them into this layer's top blob vector."""
+        blobs = self._get_next_minibatch(iter)
+
+        return blobs
+
+- Comparing bools to ints instead of using them as bools
+
+	if is_syn == 0 and is_adapt == 0:
+
+- Uncommon abbreviations
+
+	self._cur = 0 # probably means current counter?
+
+	def conv(self, input, k_h, k_w, c_o, s_h, s_w, name, reuse=None, relu=True, padding=DEFAULT_PADDING, group=1, trainable=True, biased=True, c_i=-1):
+
+- Code not in a function
+
+	The whole factory.py file
+
+- Reading in config options in different places
+
+	layer.py/minibatch.py and more
+
+- Defining variables without using them, only using them much later on
+
+	layer.py
+
+- Unused imports
+
+	network.py
+
+- Never calling the super constructor of super class
+
+	network.py
+
+- If else branches that does not get executed
+
+	network.py          if c_i == -1:
+            				c_i = input.get_shape()[-1]
+
+- Default values for function parameters that never get called with different values
+
+	def conv(self, input, k_h, k_w, c_o, s_h, s_w, name, reuse=None, relu=True, padding=DEFAULT_PADDING, group=1, trainable=True, biased=True, c_i=-1): 
+	group=1 is meant
+
+- Checking if a variable is int with: var%1==0 instead of with "isinstance(<var>, int)"
+
+	assert c_i%group==0
+
+- Imgs per batch seems to be what is usually batch_size and batch_size is I don't know what
+
+	network.py and layer.py
+
+- Passing functions from train to train_net to load roidb to then pass it back to train
+
+	train_net.py and train.py
+
+	Either load roidb in train.py or move function to train_net.py
+
+- Bad imports
+	
+	import average_distance_loss.average_distance_loss_op as average_distance_loss_op instead of from average_distance_loss import average_distance_loss_op
+
+- Adding unnecessary code bloat by adding all data to roidb when adding flipped images, instead of only having a flipped not flipped flag
+
+    def append_flipped_images(self):
+    num_images = self.num_images
+    for i in xrange(num_images):
+        entry = {'image' : self.roidb[i]['image'],
+                 'depth' : self.roidb[i]['depth'],
+                 'label' : self.roidb[i]['label'],
+                 'meta_data' : self.roidb[i]['meta_data'],
+                 'class_colors' : self.roidb[i]['class_colors'],
+                 'class_weights' : self.roidb[i]['class_weights'],
+                 'cls_index' : self.roidb[i]['cls_index'],
+                 'flipped' : True}
+        self.roidb.append(entry)
+    self._image_index = self._image_index * 2
+
+- Custom ops inputs are named bottom why?
+
+	.Input("bottom_prediction: T")
+    .Input("bottom_target: T")
+    .Input("bottom_weight: T")
+    .Input("bottom_point: T")
+    .Input("bottom_symmetry: T")
+
+- Not using an IDE
+
+	no meta-data folder of any IDE is available, also the structure of the whole project suggest no IDE was used
+
+- Two var declaration on same line with one being assigned the other not is bad style
+
+	int index_cls = -1, ind; // in average_distance_loss_op_gpu.cu.cc line 47
+
+- Paper does not define losses clearly in network architecture
+
+- The data struct poses_blob contains other things than poses, like batch indices and meta-data(cls_indexes), even though there is a specific blob meta-data
+
+    for j in xrange(num):
+    R = poses[:, :3, j]
+    T = poses[:, 3, j]
+
+    qt[j, 0] = i
+    qt[j, 1] = meta_data['cls_indexes'][j]
+    qt[j, 2:6] = 0  # fill box later
+    qt[j, 6:10] = mat2quat(R)
+    qt[j, 10:] = T
+
+	pose_blob = np.concatenate((pose_blob, qt), axis=0)

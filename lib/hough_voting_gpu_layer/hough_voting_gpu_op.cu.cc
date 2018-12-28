@@ -387,7 +387,8 @@ __global__ void compute_rois_kernel(const int nthreads, float* top_box, float* t
     const float* extents, const float* meta_data, const float* gt, float* hough_space, float* hough_data, int* max_indexes, int* class_indexes,
     int is_train, int batch_index, const int height, const int width, const int num_classes, const int num_gt, int* num_rois) 
 {
-  CUDA_1D_KERNEL_LOOP(index, nthreads) 
+//  printf("Num_gt: %i\n", num_gt);
+  CUDA_1D_KERNEL_LOOP(index, nthreads)
   {
     float scale = 0.05;
     int max_index = max_indexes[index];
@@ -446,6 +447,11 @@ __global__ void compute_rois_kernel(const int nthreads, float* top_box, float* t
           int gt_ind = i;
 
           float overlap = compute_box_overlap(cls, extents, meta_data, gt + gt_ind * 13, top_box + roi_index * 7 + 2);
+          if (index == 0) {
+            printf("Test\n");
+//            printf("In loop %i, %i\n", index, nthreads);
+            printf("Overlap: %f\n", overlap);
+          }
           if (overlap > 0.2)
           {
             for (int j = 0; j < 9; j++)
@@ -651,6 +657,7 @@ void HoughVotingLaucher(OpKernelContext* context,
   int* class_indexes_host = (int*)malloc(num_classes * sizeof(int));
   cudaMemcpy(array_sizes_host, array_sizes, num_classes * sizeof(int), cudaMemcpyDeviceToHost);
   int count = 0;
+  printf("Num classes: %i\n", num_classes);
   for (int c = 1; c < num_classes; c++)
   {
     if (array_sizes_host[c] > labelThreshold)
@@ -661,7 +668,7 @@ void HoughVotingLaucher(OpKernelContext* context,
     // else
     //  printf("class %d with only pixels %d\n", c, array_sizes_host[c]);
   }
-
+  printf("Count: %i\n", count);
   if (count == 0)
   {
     free(array_sizes_host);
@@ -772,7 +779,7 @@ void HoughVotingLaucher(OpKernelContext* context,
   cudaMemcpy(&num_max_host, num_max, sizeof(int), cudaMemcpyDeviceToHost);
   if (num_max_host >= index_size)
     num_max_host = index_size;
-  // printf("num_max: %d\n", num_max_host);
+  printf("num_max: %d\n", num_max_host);
   if (num_max_host > 0)
   {
     output_size = num_max_host;
