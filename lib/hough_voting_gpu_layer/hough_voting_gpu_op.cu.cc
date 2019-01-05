@@ -78,6 +78,9 @@ __device__ inline float IoU(float* a, float* b)
   float interS = width * height;
   float Sa = (a[2] - a[0] + 1) * (a[3] - a[1] + 1);
   float Sb = (b[2] - b[0] + 1) * (b[3] - b[1] + 1);
+//  printf("interS: %f\n", interS);
+//  printf("Sa: %f\n", Sa);
+//  printf("Sb: %f\n", Sb);
   return interS / (Sa + Sb - interS);
 }
 
@@ -125,6 +128,9 @@ __device__ inline float compute_box_overlap(int cls, const float* extents, const
   float xHalf = extents[cls * 3 + 0] * 0.5;
   float yHalf = extents[cls * 3 + 1] * 0.5;
   float zHalf = extents[cls * 3 + 2] * 0.5;
+//  printf("xHalf: %f\n", xHalf);
+//  printf("yHalf: %f\n", yHalf);
+//  printf("zHalf: %f\n", zHalf);
 
   Eigen::Matrix<float,8,3,Eigen::DontAlign> bb3D;
   bb3D(0, 0) = xHalf; bb3D(0, 1) = yHalf; bb3D(0, 2) = zHalf;
@@ -348,6 +354,11 @@ __global__ void compute_max_indexes_kernel(const int nthreads, int* max_indexes,
     float bb_height = hough_data[offset + 1];
     float bb_width = hough_data[offset + 2];
 
+//    printf("hough_space value: %f\n", hough_space[index]);
+//    printf("bb_height: %f\n", bb_height);
+//    printf("bb_width: %f\n", bb_width);
+
+
     if (hough_space[index] > threshold && bb_height > 0 && bb_width > 0)
     {
       // check if the location is local maximum
@@ -447,11 +458,8 @@ __global__ void compute_rois_kernel(const int nthreads, float* top_box, float* t
           int gt_ind = i;
 
           float overlap = compute_box_overlap(cls, extents, meta_data, gt + gt_ind * 13, top_box + roi_index * 7 + 2);
-          if (index == 0) {
-            printf("Test\n");
-//            printf("In loop %i, %i\n", index, nthreads);
-            printf("Overlap: %f\n", overlap);
-          }
+          printf("In loop %i, %i\n", index, nthreads);
+          printf("Overlap: %f\n", overlap);
           if (overlap > 0.2)
           {
             for (int j = 0; j < 9; j++)
@@ -625,7 +633,9 @@ void HoughVotingLaucher(OpKernelContext* context,
     const int skip_pixels, 
     float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain, int* num_rois, const Eigen::GpuDevice& d)
 {
-  const int kThreadsPerBlock = 1024;
+//  const int kThreadsPerBlock = 1024;
+// Fixes too many resources requested error
+  const int kThreadsPerBlock = 512;
   int output_size;
   cudaError_t err;
 
@@ -660,6 +670,8 @@ void HoughVotingLaucher(OpKernelContext* context,
   printf("Num classes: %i\n", num_classes);
   for (int c = 1; c < num_classes; c++)
   {
+    printf("Array_sizes_host: %i\n", array_sizes_host[c]);
+    printf("LabelThreshold %i\n", labelThreshold);
     if (array_sizes_host[c] > labelThreshold)
     {
       class_indexes_host[count] = c;
@@ -783,6 +795,7 @@ void HoughVotingLaucher(OpKernelContext* context,
   if (num_max_host > 0)
   {
     output_size = num_max_host;
+    printf("Before compute rois kernel\n");
     compute_rois_kernel<<<(output_size + kThreadsPerBlock - 1) / kThreadsPerBlock,
                          kThreadsPerBlock, 0, d.stream()>>>(
         output_size, top_box, top_pose, top_target, top_weight, top_domain,

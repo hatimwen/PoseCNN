@@ -67,6 +67,11 @@
 
 	network.py
 
+- Unused variables
+
+    def __init__(self, sess, network, imdb, roidb, output_dir, pretrained_model=None, pretrained_ckpt=None):
+    in train.py
+
 - Never calling the super constructor of super class
 
 	network.py
