@@ -16,6 +16,7 @@ import numpy as np
 import os
 import tensorflow as tf
 from tensorflow.python.framework.errors_impl import NotFoundError
+from tensorflow.python import debug as tf_debug
 import sys
 import threading
 import math
@@ -273,8 +274,9 @@ class SolverWrapper(object):
             for iter_train in range(iters_train):
 
                 timer.tic()
-                loss_summary, loss_cls_summary, loss_vertex_summary, loss_pose_summary, loss_regu_summary, loss_value, loss_cls_value, loss_vertex_value, loss_pose_value, loss_regu_value, lr, _ \
-                    = sess.run([loss_op, loss_cls_op, loss_vertex_op, loss_pose_op, loss_regu_op, loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate, train_op])
+                loss_summary, loss_cls_summary, loss_vertex_summary, loss_pose_summary, loss_regu_summary, loss_value, loss_cls_value, loss_vertex_value, \
+                    loss_pose_value, loss_regu_value, lr, _ = sess.run([loss_op, loss_cls_op, loss_vertex_op, loss_pose_op, loss_regu_op, loss, loss_cls, \
+                    loss_vertex, loss_pose, loss_regu, learning_rate, train_op])
                 train_writer.add_summary(loss_summary, iters_train * epoch + iter_train)
                 train_writer.add_summary(loss_cls_summary, iters_train * epoch + iter_train)
                 train_writer.add_summary(loss_vertex_summary, iters_train * epoch + iter_train)
@@ -706,6 +708,7 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
     # config.gpu_options.allow_growth = True
     # with tf.Session(config=config) as sess:
     with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
+        #sess = tf_debug.TensorBoardDebugWrapperSession(sess, 'localhost:6064')
 
         # data layer
         if cfg.TRAIN.SINGLE_FRAME:
