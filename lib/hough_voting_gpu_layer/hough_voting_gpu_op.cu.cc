@@ -78,9 +78,6 @@ __device__ inline float IoU(float* a, float* b)
   float interS = width * height;
   float Sa = (a[2] - a[0] + 1) * (a[3] - a[1] + 1);
   float Sb = (b[2] - b[0] + 1) * (b[3] - b[1] + 1);
-//  printf("interS: %f\n", interS);
-//  printf("Sa: %f\n", Sa);
-//  printf("Sb: %f\n", Sb);
   return interS / (Sa + Sb - interS);
 }
 
@@ -128,9 +125,6 @@ __device__ inline float compute_box_overlap(int cls, const float* extents, const
   float xHalf = extents[cls * 3 + 0] * 0.5;
   float yHalf = extents[cls * 3 + 1] * 0.5;
   float zHalf = extents[cls * 3 + 2] * 0.5;
-//  printf("xHalf: %f\n", xHalf);
-//  printf("yHalf: %f\n", yHalf);
-//  printf("zHalf: %f\n", zHalf);
 
   Eigen::Matrix<float,8,3,Eigen::DontAlign> bb3D;
   bb3D(0, 0) = xHalf; bb3D(0, 1) = yHalf; bb3D(0, 2) = zHalf;
@@ -354,11 +348,6 @@ __global__ void compute_max_indexes_kernel(const int nthreads, int* max_indexes,
     float bb_height = hough_data[offset + 1];
     float bb_width = hough_data[offset + 2];
 
-//    printf("hough_space value: %f\n", hough_space[index]);
-//    printf("bb_height: %f\n", bb_height);
-//    printf("bb_width: %f\n", bb_width);
-
-
     if (hough_space[index] > threshold && bb_height > 0 && bb_width > 0)
     {
       // check if the location is local maximum
@@ -398,7 +387,6 @@ __global__ void compute_rois_kernel(const int nthreads, float* top_box, float* t
     const float* extents, const float* meta_data, const float* gt, float* hough_space, float* hough_data, int* max_indexes, int* class_indexes,
     int is_train, int batch_index, const int height, const int width, const int num_classes, const int num_gt, int* num_rois) 
 {
-//  printf("Num_gt: %i\n", num_gt);
   CUDA_1D_KERNEL_LOOP(index, nthreads)
   {
     float scale = 0.05;
@@ -458,8 +446,6 @@ __global__ void compute_rois_kernel(const int nthreads, float* top_box, float* t
           int gt_ind = i;
 
           float overlap = compute_box_overlap(cls, extents, meta_data, gt + gt_ind * 13, top_box + roi_index * 7 + 2);
-          printf("In loop %i, %i\n", index, nthreads);
-          printf("Overlap: %f\n", overlap);
           if (overlap > 0.2)
           {
             for (int j = 0; j < 9; j++)
@@ -667,11 +653,8 @@ void HoughVotingLaucher(OpKernelContext* context,
   int* class_indexes_host = (int*)malloc(num_classes * sizeof(int));
   cudaMemcpy(array_sizes_host, array_sizes, num_classes * sizeof(int), cudaMemcpyDeviceToHost);
   int count = 0;
-  printf("Num classes: %i\n", num_classes);
   for (int c = 1; c < num_classes; c++)
   {
-    printf("Array_sizes_host: %i\n", array_sizes_host[c]);
-    printf("LabelThreshold %i\n", labelThreshold);
     if (array_sizes_host[c] > labelThreshold)
     {
       class_indexes_host[count] = c;
@@ -680,7 +663,6 @@ void HoughVotingLaucher(OpKernelContext* context,
     // else
     //  printf("class %d with only pixels %d\n", c, array_sizes_host[c]);
   }
-  printf("Count: %i\n", count);
   if (count == 0)
   {
     free(array_sizes_host);
@@ -791,11 +773,9 @@ void HoughVotingLaucher(OpKernelContext* context,
   cudaMemcpy(&num_max_host, num_max, sizeof(int), cudaMemcpyDeviceToHost);
   if (num_max_host >= index_size)
     num_max_host = index_size;
-  printf("num_max: %d\n", num_max_host);
   if (num_max_host > 0)
   {
     output_size = num_max_host;
-    printf("Before compute rois kernel\n");
     compute_rois_kernel<<<(output_size + kThreadsPerBlock - 1) / kThreadsPerBlock,
                          kThreadsPerBlock, 0, d.stream()>>>(
         output_size, top_box, top_pose, top_target, top_weight, top_domain,

@@ -9,11 +9,13 @@ import rosbag
 import rospy
 import scipy.io as sio
 import tf
-import traceback
 import yaml
 
 
 class Dataset(object):
+    bags_path = ""
+    data_output_path = ""
+
     def __init__(self, name, boxes_sizes, num_boxes, times, start_time, end_time):
         self.name = name
         self.boxes_sizes = boxes_sizes
@@ -50,6 +52,10 @@ def fill_transformer(bag):
 
 def get_datasets():
     datasets = []
+    with open("config.yaml", "r") as config:
+        config_dict = yaml.load(config)
+    Dataset.bags_path = config_dict["bags_path"]
+    Dataset.data_output_path = config_dict["images_path"]
     with open("data/dataset.txt") as datasets_f:
         for line in datasets_f:
             dataset_path = line.rstrip()
@@ -104,19 +110,21 @@ def main():
     export_images = False
     export_meta = True
     export_depth = False
+    s_tf = "tf data" if export_tf else ""
+    s_images = "color images" if export_images else ""
+    s_meta = "meta data" if export_meta else ""
+    s_depth = "depth images" if export_depth else ""
 
     datasets = get_datasets()
+
+    print("Writing {} {} {} {} into {}".format(s_tf, s_images, s_meta, s_depth, Dataset.data_output_path))
     for dataset in datasets:
         print("Preparing " + dataset.name)
         num_boxes = dataset.num_boxes
         times = dataset.times
         start_time = dataset.start_time
         end_time = dataset.end_time
-
-        with open("config.yaml", "r") as config:
-            config_dict = yaml.load(config)
-        datasets_base_path = config_dict["bags_path"]
-        bag = rosbag.Bag(os.path.join(datasets_base_path, dataset.name + ".bag"))
+        bag = rosbag.Bag(os.path.join(Dataset.bags_path, dataset.name + ".bag"))
         topics = ["/camera/color/image_raw", "/camera/aligned_depth_to_color/image_raw"]
         tf_t = fill_transformer(bag)
         try:
@@ -125,16 +133,13 @@ def main():
             pass
 
         if export_meta:
-            poses = np.empty((3, 4))
             box_translations = []
             with open(os.path.join("data", dataset.name, "box_positions.txt"), "w") as f:
                 for i in range(num_boxes):
                     time = rospy.Time(int(times[i][0]), int(times[i][1]))
-                    (trans, rot) = tf_t.lookupTransform("camera", "box" + str(i + 1), time)
+                    (trans, rot) = tf_t.lookupTransform("vicon", "box" + str(i + 1), time)
                     box_translations.append(trans)
                     f.write(str(trans + rot) + "\n")
-                    pose = rot_trans_to_matrix(rot, trans)
-                    poses = np.dstack((poses, pose))
 
             cls_indexes = [1] * num_boxes
             cls_indexes = np.float32(cls_indexes)
@@ -142,17 +147,17 @@ def main():
             # getting added later, just here for completeness sake to show all the fields available in mat_dict
             center = None
             rotation_translation_matrix = None
-
-            poses = np.delete(poses, 0, axis=2)
-            vect = np.float32([0, 1])
+            poses = None
             vertmap = np.zeros((480, 640, 3))
             intrinsic_matrix = np.float32([[610.55992534, 0, 306.86169342], [0, 610.32086262, 240.94547232], [0, 0, 1]])
             dist = np.float32([[0.10793695], [-0.21546604], [0.00045875], [-0.00670819]])
             mat_dict = {"center": center, "cls_indexes": cls_indexes, "factor_depth": 10000, "intrinsic_matrix":
-                        intrinsic_matrix, "poses": poses, "rotation_translation_matrix": rotation_translation_matrix,
-                        "vect": vect, "vertmap": vertmap}
+                        intrinsic_matrix, "poses": poses, "rotation_translation_matrix": rotation_translation_matrix, "vertmap": vertmap}
 
-        data_base_path = create_dataset_folder(dataset.name)
+        try:
+            os.makedirs(os.path.join(Dataset.data_output_path, dataset.name))
+        except OSError:
+            pass
 
         counter_color = 1
         counter_depth = 1
@@ -176,7 +181,7 @@ def main():
 
                     prefix = get_filename_prefix(counter_color)
                     if export_images:
-                        image_path = os.path.join(data_base_path, prefix + '-color.png')
+                        image_path = os.path.join(Dataset.data_output_path, dataset.name, prefix + '-color.png')
                         image = bridge.imgmsg_to_cv2(msg, "bgr8")
                         cv2.imwrite(image_path, image)
 
@@ -196,7 +201,14 @@ def main():
                         mat_dict["center"] = center
                         rotation_translation_matrix = rot_trans_to_matrix(rot, trans)
                         mat_dict["rotation_translation_matrix"] = rotation_translation_matrix
-                        meta_mat_path = os.path.join(data_base_path, prefix + '-meta.mat')
+                        poses = np.empty((3, 4))
+                        for i in range(num_boxes):
+                            (trans, rot) = tf_t.lookupTransform("camera", "box" + str(i + 1) + "_static", msg.header.stamp)
+                            pose = rot_trans_to_matrix(rot, trans)
+                            poses = np.dstack((poses, pose))
+                        poses = np.delete(poses, 0, axis=2)
+                        mat_dict["poses"] = poses
+                        meta_mat_path = os.path.join(Dataset.data_output_path, dataset.name, prefix + '-meta.mat')
                         sio.savemat(meta_mat_path, mat_dict)
                     counter_color += 1
                 except tf.ExtrapolationException:
@@ -212,7 +224,7 @@ def main():
                     cv2.normalize(image, image, 0, 1, cv2.NORM_MINMAX)
                     image = image*255
                     prefix = get_filename_prefix(counter_depth)
-                    image_path = os.path.join(data_base_path, prefix + '-depth.png')
+                    image_path = os.path.join(Dataset.data_output_path, dataset.name, prefix + '-depth.png')
                     cv2.imwrite(image_path, image)
                 counter_depth += 1
 

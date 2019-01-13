@@ -51,11 +51,6 @@ __global__ void AveragedistanceForward(const int nthreads, const Dtype* predicti
       if (weight[index] > 0)
       {
         index_cls = i / POSE_CHANNELS;
-        if (index_thread == 0) {
-          printf("In loop %i, %i \n", index_thread, nthreads);
-    //      printf("Ind: %i \n", ind);
-          printf("Index_cls FIRST: %i \n", index_cls);
-        }
 
         // gt quaternion
         s = target[index + 0];
@@ -95,11 +90,6 @@ __global__ void AveragedistanceForward(const int nthreads, const Dtype* predicti
         break;
       }
     }
-//    if (index_thread == 0) {
-//      printf("In loop %i, %i\n", index_thread, nthreads);
-////      printf("Ind: %i \n", ind);
-//      printf("Index_cls: %i\n", index_cls);
-//    }
     if (index_cls == -1)
       continue;
 
@@ -185,7 +175,6 @@ __global__ void AveragedistanceForward(const int nthreads, const Dtype* predicti
     z2 = rotations[ind + 6] * point[index_min + 0] + rotations[ind + 7] * point[index_min + 1] + rotations[ind + 8] * point[index_min + 2];
 
     Dtype distance = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) + (z1 - z2) * (z1 - z2));
-    printf("Point %d: %f\n", index_thread, distance);
     if (distance < margin)
       continue;
 
@@ -269,7 +258,6 @@ void AveragedistanceForwardLaucher(OpKernelContext* context,
     const float* bottom_symmetry, const int batch_size, const int num_classes, const int num_points, const float margin,
     float* top_data, float* bottom_diff, const Eigen::GpuDevice& d)
 {
-//  printf("In AveragedistanceForwardLaucher\n");
   // run kernels
   cudaError_t err;
   const int kThreadsPerBlock = 1024;
