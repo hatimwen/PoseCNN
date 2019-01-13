@@ -278,6 +278,7 @@ if __name__ == '__main__':
 
     if not args.randomize:
         # fix the random seeds (numpy and caffe) for reproducibility
+        tf.set_random_seed(cfg.RNG_SEED)
         np.random.seed(cfg.RNG_SEED)
 
     imdb = get_imdb(args.imdb_name)
