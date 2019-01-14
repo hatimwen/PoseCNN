@@ -259,7 +259,7 @@ def render(data_queue, intrinsic_matrix, points):
 
 
 def find_smallest_divisor(x):
-    for i in [2, 3, 5, 1]:
+    for i in [2, 3, 5, 7, 1]:
         if x % i == 0:
             return i
 

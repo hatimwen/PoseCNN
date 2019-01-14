@@ -619,9 +619,9 @@ void HoughVotingLaucher(OpKernelContext* context,
     const int skip_pixels, 
     float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain, int* num_rois, const Eigen::GpuDevice& d)
 {
-//  const int kThreadsPerBlock = 1024;
+  const int kThreadsPerBlock = 1024;
 // Fixes too many resources requested error
-  const int kThreadsPerBlock = 512;
+//  const int kThreadsPerBlock = 512;
   int output_size;
   cudaError_t err;
 

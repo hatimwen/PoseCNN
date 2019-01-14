@@ -42,12 +42,11 @@ generate_dataset/config/
 data/LOV/trainval.txt
 trained_nets/
 
-data/LOV/indexes/000_box_train.txt
-data/LOV/indexes/000_box_val.txt
-data/LOV/indexes/000_box_train (copy).txt
-data/LOV/indexes/000_box_val (copy).txt
+data/LOV/indexes
 
 runs.txt
+
+experiments/
 
 .cproject
 .project

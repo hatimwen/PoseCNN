@@ -12,6 +12,7 @@ def color_and_depth_exist(folder_path, folder, prefix):
 def main():
     folder_path = "/media/satco/My Passport/Uni/Master thesis/data"
     folders = os.listdir(folder_path)
+    folders.remove("dataset1.1")
 
     # Split data in 0.8/0.2 trainval and test and then split trainval into 0.8/0.2 train and val
     trainval_set = []
