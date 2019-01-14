@@ -269,7 +269,7 @@ class lov_single(datasets.imdb):
         # self.compute_class_weights()
 
         gt_roidb = [self._load_lov_annotation(index)
-                    for index in self.image_index]
+                    for index in self.image_index_val]
 
         if not cfg.TRAIN.SEGMENTATION:
             # print out recall
