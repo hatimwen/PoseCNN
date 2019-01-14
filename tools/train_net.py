@@ -307,6 +307,7 @@ if __name__ == '__main__':
     cfg.CAD = args.cad_name
     cfg.POSE = args.pose_name
     cfg.IS_TRAIN = True
+    cfg.TRAIN.IMS_PER_BATCH = 8
     files = ["data/LOV/indexes/000_box_train.txt", "data/LOV/indexes/000_box_val.txt"]
     batch_sizes = []
     iters = []
@@ -314,13 +315,10 @@ if __name__ == '__main__':
         indexes_f = open(file)
         indexes = indexes_f.readlines()
         num_indexes = len(indexes)
-        batch_size = find_smallest_divisor(num_indexes)
-        batch_sizes.append(batch_size)
-        iterations = num_indexes / batch_size
+        iterations = (num_indexes + cfg.TRAIN.IMS_PER_BATCH) / cfg.TRAIN.IMS_PER_BATCH
         print(file, "length_data, batch_size, iterations")
-        print(num_indexes, batch_size, iterations)
+        print(num_indexes, cfg.TRAIN.IMS_PER_BATCH, iterations)
         iters.append(iterations)
-    cfg.TRAIN.IMS_PER_BATCH = batch_sizes[0]
 
     if cfg.TRAIN.SYNTHESIZE and cfg.TRAIN.SYN_ONLINE:
         import libsynthesizer
