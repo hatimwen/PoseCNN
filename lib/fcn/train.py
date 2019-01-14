@@ -216,19 +216,16 @@ class SolverWrapper(object):
         loss_cls_op = tf.summary.scalar('loss_cls', tf.squeeze(loss_cls))
         loss_vertex_op = tf.summary.scalar('loss_vertex', tf.squeeze(loss_vertex))
         loss_pose_op = tf.summary.scalar('loss_pose', tf.squeeze(loss_pose))
-        loss_regu_op = tf.summary.scalar('loss_regu', tf.squeeze(loss_regu))
 
         loss_placeholder = tf.placeholder(tf.float32, shape=())
         loss_cls_placeholder = tf.placeholder(tf.float32, shape=())
         loss_vertex_placeholder = tf.placeholder(tf.float32, shape=())
         loss_pose_placeholder = tf.placeholder(tf.float32, shape=())
-        loss_regu_placeholder = tf.placeholder(tf.float32, shape=())
 
         loss_val_op = tf.summary.scalar('loss_val', loss_placeholder)
         loss_cls_val_op = tf.summary.scalar('loss_cls_val', loss_cls_placeholder)
         loss_vertex_val_op = tf.summary.scalar('loss_vertex_val', loss_vertex_placeholder)
         loss_pose_val_op = tf.summary.scalar('loss_pose_val', loss_pose_placeholder)
-        loss_regu_val_op = tf.summary.scalar('loss_regu_val', loss_regu_placeholder)
 
 
         # merged = tf.summary.merge_all()
@@ -274,14 +271,13 @@ class SolverWrapper(object):
             for iter_train in range(iters_train):
 
                 timer.tic()
-                loss_summary, loss_cls_summary, loss_vertex_summary, loss_pose_summary, loss_regu_summary, loss_value, loss_cls_value, loss_vertex_value, \
-                    loss_pose_value, loss_regu_value, lr, _ = sess.run([loss_op, loss_cls_op, loss_vertex_op, loss_pose_op, loss_regu_op, loss, loss_cls, \
+                loss_summary, loss_cls_summary, loss_vertex_summary, loss_pose_summary, loss_value, loss_cls_value, loss_vertex_value, \
+                    loss_pose_value, loss_regu_value, lr, _ = sess.run([loss_op, loss_cls_op, loss_vertex_op, loss_pose_op, loss, loss_cls, \
                     loss_vertex, loss_pose, loss_regu, learning_rate, train_op])
                 train_writer.add_summary(loss_summary, iters_train * epoch + iter_train)
                 train_writer.add_summary(loss_cls_summary, iters_train * epoch + iter_train)
                 train_writer.add_summary(loss_vertex_summary, iters_train * epoch + iter_train)
                 train_writer.add_summary(loss_pose_summary, iters_train * epoch + iter_train)
-                train_writer.add_summary(loss_regu_summary, iters_train * epoch + iter_train)
                 timer.toc()
 
                 print 'iter: %d / %d, loss: %.4f, loss_cls: %.4f, loss_vertex: %.4f, loss_pose: %.4f, lr: %.8f,  time: %.2f' % \
@@ -302,7 +298,6 @@ class SolverWrapper(object):
             losses_cls_val = []
             losses_vertex_val = []
             losses_pose_val = []
-            losses_regu_val = []
 
             for iter_val in range(iters_val):
 
@@ -317,7 +312,6 @@ class SolverWrapper(object):
                 losses_cls_val.append(loss_cls_value)
                 losses_vertex_val.append(loss_vertex_value)
                 losses_pose_val.append(loss_pose_value)
-                losses_regu_val.append(loss_regu_value)
                 timer.toc()
 
                 print 'iter: %d / %d, loss: %.4f, loss_cls: %.4f, loss_vertex: %.4f, loss_pose: %.4f, lr: %.8f,  time: %.2f' % \
@@ -336,12 +330,10 @@ class SolverWrapper(object):
             loss_cls_val_summary = sess.run(loss_cls_val_op, feed_dict={loss_cls_placeholder: np.mean(losses_cls_val)})
             loss_vertex_val_summary = sess.run(loss_vertex_val_op, feed_dict={loss_vertex_placeholder: np.mean(losses_vertex_val)})
             loss_pose_val_summary = sess.run(loss_pose_val_op, feed_dict={loss_pose_placeholder: np.mean(losses_pose_val)})
-            loss_regu_val_summary = sess.run(loss_regu_val_op, feed_dict={loss_regu_placeholder: np.mean(losses_regu_val)})
             val_writer.add_summary(loss_val_summary, iters_train * (epoch + 1))
             val_writer.add_summary(loss_cls_val_summary, iters_train * (epoch + 1))
             val_writer.add_summary(loss_vertex_val_summary, iters_train * (epoch + 1))
             val_writer.add_summary(loss_pose_val_summary, iters_train * (epoch + 1))
-            val_writer.add_summary(loss_regu_val_summary, iters_train * (epoch + 1))
 
         sess.run(self.net.close_queue_op)
 
