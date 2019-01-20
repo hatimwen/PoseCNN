@@ -258,13 +258,13 @@ class lov_single(datasets.imdb):
         This function loads/saves from/to a cache file to speed up future calls.
         """
 
-        cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb_val.pkl')
-        if os.path.exists(cache_file):
-            with open(cache_file, 'rb') as fid:
-                roidb = cPickle.load(fid)
-            print '{} gt roidb loaded from {}'.format(self.name, cache_file)
-            print 'class weights: ', roidb[0]['class_weights']
-            return roidb
+        # cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb_val.pkl')
+        # if os.path.exists(cache_file):
+        #     with open(cache_file, 'rb') as fid:
+        #         roidb = cPickle.load(fid)
+        #     print '{} gt roidb loaded from {}'.format(self.name, cache_file)
+        #     print 'class weights: ', roidb[0]['class_weights']
+        #     return roidb
 
         # self.compute_class_weights()
 
@@ -279,9 +279,9 @@ class lov_single(datasets.imdb):
                 if self._num_boxes_all[i] > 0:
                     print '{}: Recall {:f}'.format(self.classes[i], float(self._num_boxes_covered[i]) / float(self._num_boxes_all[i]))
 
-        with open(cache_file, 'wb') as fid:
-            cPickle.dump(gt_roidb, fid, cPickle.HIGHEST_PROTOCOL)
-        print 'wrote gt roidb to {}'.format(cache_file)
+        # with open(cache_file, 'wb') as fid:
+        #     cPickle.dump(gt_roidb, fid, cPickle.HIGHEST_PROTOCOL)
+        # print 'wrote gt roidb to {}'.format(cache_file)
 
         return gt_roidb
 
@@ -293,13 +293,13 @@ class lov_single(datasets.imdb):
         This function loads/saves from/to a cache file to speed up future calls.
         """
 
-        cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
-        if os.path.exists(cache_file):
-            with open(cache_file, 'rb') as fid:
-                roidb = cPickle.load(fid)
-            print '{} gt roidb loaded from {}'.format(self.name, cache_file)
-            print 'class weights: ', roidb[0]['class_weights']
-            return roidb
+        # cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
+        # if os.path.exists(cache_file):
+        #     with open(cache_file, 'rb') as fid:
+        #         roidb = cPickle.load(fid)
+        #     print '{} gt roidb loaded from {}'.format(self.name, cache_file)
+        #     print 'class weights: ', roidb[0]['class_weights']
+        #     return roidb
 
         # self.compute_class_weights()
 
@@ -314,9 +314,9 @@ class lov_single(datasets.imdb):
                 if self._num_boxes_all[i] > 0:
                     print '{}: Recall {:f}'.format(self.classes[i], float(self._num_boxes_covered[i]) / float(self._num_boxes_all[i]))
 
-        with open(cache_file, 'wb') as fid:
-            cPickle.dump(gt_roidb, fid, cPickle.HIGHEST_PROTOCOL)
-        print 'wrote gt roidb to {}'.format(cache_file)
+        # with open(cache_file, 'wb') as fid:
+        #     cPickle.dump(gt_roidb, fid, cPickle.HIGHEST_PROTOCOL)
+        # print 'wrote gt roidb to {}'.format(cache_file)
 
         return gt_roidb
 

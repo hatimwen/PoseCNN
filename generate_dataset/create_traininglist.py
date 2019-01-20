@@ -10,9 +10,11 @@ def color_and_depth_exist(folder_path, folder, prefix):
 
 
 def main():
-    folder_path = "/media/satco/My Passport/Uni/Master thesis/data"
-    folders = os.listdir(folder_path)
-    folders.remove("dataset1.1")
+    folder_path = "/home/satco/kaju/PoseCNN/data/LOV/data"
+    # folders = os.listdir(folder_path)
+    # folders.remove("dataset1.1")
+    # folders = ["dataset1.3", "dataset2.3", "dataset2.4"]
+    folders = ["dataset1.3"]
 
     # Split data in 0.8/0.2 trainval and test and then split trainval into 0.8/0.2 train and val
     trainval_set = []
@@ -40,9 +42,9 @@ def main():
     train_set = trainval_set[:train_index]
     val_set = trainval_set[train_index:]
 
-    test_file = open(os.path.split(folder_path)[0] + "/000_box_test.txt", "w")
-    train_file = open(os.path.split(folder_path)[0] + "/000_box_train.txt", "w")
-    val_file = open(os.path.split(folder_path)[0] + "/000_box_val.txt", "w")
+    test_file = open(os.path.split(folder_path)[0] + "/indexes/000_box_test.txt", "w")
+    train_file = open(os.path.split(folder_path)[0] + "/indexes/000_box_train.txt", "w")
+    val_file = open(os.path.split(folder_path)[0] + "/indexes/000_box_val.txt", "w")
     for i in test_set:
         test_file.write(i)
     for i in train_set:

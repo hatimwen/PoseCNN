@@ -10,7 +10,7 @@ def ros_to_blender_quat(qaut):
 def create_dataset_folder(dataset):
     with open("config.yaml", "r") as config:
         config_dict = yaml.load(config)
-    base_path = config_dict["datasets_base_path"]
+    base_path = config_dict["images_path"]
     data_base_path = os.path.join(base_path, dataset)
     try:
         os.makedirs(data_base_path)

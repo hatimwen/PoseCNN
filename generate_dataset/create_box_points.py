@@ -1,7 +1,7 @@
 # all numbers in mm
-length = 350  # x
-width = 215  # y
-height = 120  # z
+length = 300  # x
+width = 200  # y
+height = 200  # z
 point_spacing = 10
 
 
@@ -38,7 +38,7 @@ def write_points3(a, b, c, fout):
             fout.write("{} {} {}\n".format(first / 1000.0, second / 1000.0, fixed / 1000.0))
 
 
-with open("points.xyz", "w") as fout:
+with open("/home/satco/kaju/PoseCNN/data/LOV/models/000_box/points.xyz", "w") as fout:
     # fout.write(str(528) + "\n")
     # fout.write("Test\n")
     write_points(length, width, height, fout)

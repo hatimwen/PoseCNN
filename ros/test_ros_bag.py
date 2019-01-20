@@ -72,6 +72,9 @@ def parse_args():
     parser.add_argument('--depth_topic', dest='depth_topic',
                         help='name of the depth topic',
                         default="/camera/aligned_depth_to_color/image_raw", type=str)
+    parser.add_argument('--start_time', dest='start_time',
+                        help='start_time of the rosbag',
+                        default="1547720713.673580", type=str)
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -135,7 +138,10 @@ if __name__ == '__main__':
     cv_bridge = CvBridge()
 
     count = 1
-    for topic, msg, t in bag.read_messages(topics=[args.color_topic, args.depth_topic]):
+    # print(args.start_time.split(".")[0])
+    # print(args.start_time.split(".")[1])
+    start_time = rospy.Time(int(args.start_time.split(".")[0]), int(args.start_time.split(".")[1]))
+    for topic, msg, t in bag.read_messages(topics=[args.color_topic, args.depth_topic], start_time=start_time):
         print count, topic, type(msg)
         if topic == args.color_topic:
             rgb = msg
@@ -144,8 +150,11 @@ if __name__ == '__main__':
 
         # if count > 2:
         #     break
-        if count % 2 == 0:
+        # if count % 2 == 0:
+        try:
             test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count/2 - 1)
+        except NameError:
+            pass
 
         count += 1
 

@@ -36,7 +36,6 @@ data/LOV/poses/
 data/LOV/models/
 data/SUN2012
 data/ObjectNet3D
-experiments/scripts/lov_color_2d_train_full.sh
 lib/setup.py
 generate_dataset/config/
 data/LOV/trainval.txt
@@ -45,8 +44,6 @@ trained_nets/
 data/LOV/indexes
 
 runs.txt
-
-experiments/
 
 .cproject
 .project

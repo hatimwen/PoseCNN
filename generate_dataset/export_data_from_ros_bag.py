@@ -1,4 +1,4 @@
-from common import ros_to_blender_quat, create_dataset_folder, get_filename_prefix
+from common import ros_to_blender_quat, get_filename_prefix
 import cv2
 from cv_bridge import CvBridge
 import geometry_msgs
@@ -106,10 +106,10 @@ def rot_trans_to_matrix(rot, trans):
 
 def main():
 
-    export_tf = False
-    export_images = False
+    export_tf = True
+    export_images = True
     export_meta = True
-    export_depth = False
+    export_depth = True
     s_tf = "tf data" if export_tf else ""
     s_images = "color images" if export_images else ""
     s_meta = "meta data" if export_meta else ""

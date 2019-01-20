@@ -132,16 +132,17 @@ def list_to_tuples(l):
 def read_config():
     datasets = []
     boxes_multiple = []
-    with open("data/dataset.txt") as f:
-        for line in f:
+    with open("data/dataset.txt") as datasets_f:
+        for line in datasets_f:
             dataset_path = line.rstrip()
-            dataset = os.path.split(dataset_path)[1][:-5]
-            datasets.append(dataset)
-            stream = open(dataset_path, "r")
-            yaml_data = yaml.load_all(stream)
-            data_dict = list(yaml_data)[0]
-            boxes = data_dict["boxes"]
-            boxes_multiple.append(boxes)
+            if not line.startswith(";"):
+                dataset = os.path.split(dataset_path)[1][:-5]
+                datasets.append(dataset)
+                stream = open(dataset_path, "r")
+                yaml_data = yaml.load_all(stream)
+                data_dict = list(yaml_data)[0]
+                boxes = data_dict["boxes"]
+                boxes_multiple.append(boxes)
     return datasets, boxes_multiple
 
 
