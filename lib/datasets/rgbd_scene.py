@@ -15,7 +15,7 @@ class rgbd_scene(datasets.imdb):
         self._rgbd_scene_path = self._get_default_path() if rgbd_scene_path is None \
                             else rgbd_scene_path
         self._data_path = os.path.join(self._rgbd_scene_path, 'data')
-        self._classes = ('__background__', 'bowl')
+        self._classes = ('__background__', '000_box')
         self._class_colors = [(64, 64, 64), (1, 1, 1)]
         self._class_weights = [1, 1]
         self._symmetry = np.array([0, 1])
@@ -131,46 +131,20 @@ class rgbd_scene(datasets.imdb):
     def gt_roidb_val(self):
         """
         Return the database of ground-truth regions of interest.
-
-        This function loads/saves from/to a cache file to speed up future calls.
         """
-
-        cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb_val.pkl')
-        if os.path.exists(cache_file):
-            with open(cache_file, 'rb') as fid:
-                roidb = cPickle.load(fid)
-            print '{} gt roidb loaded from {}'.format(self.name, cache_file)
-            return roidb
 
         gt_roidb = [self._load_rgbd_scene_annotation(index)
                     for index in self._image_index_val]
-
-        with open(cache_file, 'wb') as fid:
-            cPickle.dump(gt_roidb, fid, cPickle.HIGHEST_PROTOCOL)
-        print 'wrote gt roidb to {}'.format(cache_file)
 
         return gt_roidb
 
     def gt_roidb(self):
         """
         Return the database of ground-truth regions of interest.
-
-        This function loads/saves from/to a cache file to speed up future calls.
         """
-
-        cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
-        if os.path.exists(cache_file):
-            with open(cache_file, 'rb') as fid:
-                roidb = cPickle.load(fid)
-            print '{} gt roidb loaded from {}'.format(self.name, cache_file)
-            return roidb
 
         gt_roidb = [self._load_rgbd_scene_annotation(index)
                     for index in self.image_index]
-
-        with open(cache_file, 'wb') as fid:
-            cPickle.dump(gt_roidb, fid, cPickle.HIGHEST_PROTOCOL)
-        print 'wrote gt roidb to {}'.format(cache_file)
 
         return gt_roidb
 
