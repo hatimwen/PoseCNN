@@ -32,6 +32,7 @@ TRAIN:
   SYN_CLASS_INDEX: 15
   SYNROOT: 'data/LOV/data_syn_036_box/'
   SYNNUM: 10000
+  THRESHOLD_LABEL: 1.0
 TEST:
   SINGLE_FRAME: True
   SCALES_BASE: !!python/tuple [1.0]

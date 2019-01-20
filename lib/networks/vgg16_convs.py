@@ -132,10 +132,9 @@ class vgg16_convs(Network):
 
             (self.feed('conv4_3')
                  .conv(1, 1, self.num_units, 1, 1, name='score_conv4', c_i=512))
-
+#.dropout(self.keep_prob_queue, name='dropout')
         (self.feed('score_conv4', 'upscore_conv5')
              .add(name='add_score')
-             .dropout(self.keep_prob_queue, name='dropout')
              .deconv(int(16*self.scale), int(16*self.scale), self.num_units, int(8*self.scale), int(8*self.scale), name='upscore', trainable=False))
 
         (self.feed('upscore')
@@ -156,10 +155,9 @@ class vgg16_convs(Network):
 
             (self.feed('conv4_3')
                  .conv(1, 1, 128, 1, 1, name='score_conv4_vertex', relu=False, c_i=512))
-            
+            #.dropout(self.keep_prob_queue, name='dropout_vertex')
             (self.feed('score_conv4_vertex', 'upscore_conv5_vertex')
                  .add(name='add_score_vertex')
-                 .dropout(self.keep_prob_queue, name='dropout_vertex')
                  .deconv(int(16*self.scale), int(16*self.scale), 128, int(8*self.scale), int(8*self.scale), name='upscore_vertex', trainable=False)
                  .conv(1, 1, 3 * self.num_classes, 1, 1, name='vertex_pred', relu=False, c_i=128))
 
@@ -183,13 +181,12 @@ class vgg16_convs(Network):
                          .roi_pool(7, 7, 1.0 / 8.0, 0, name='pool4'))
                          #.crop_pool_new(8.0, pool_size=7, name='pool4'))
 
-
+# .dropout(self.keep_prob_queue, name='drop6')
+#                          .dropout(self.keep_prob_queue, name='drop7')
                     (self.feed('pool5', 'pool4')
                          .add(name='pool_score')
                          .fc(4096, height=7, width=7, channel=512, name='fc6')
-                         .dropout(self.keep_prob_queue, name='drop6')
                          .fc(4096, num_in=4096, name='fc7')
-                         .dropout(self.keep_prob_queue, name='drop7')
                          .fc(4 * self.num_classes, relu=False, name='fc8')
                          .tanh(name='poses_tanh'))
 
