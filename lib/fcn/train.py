@@ -619,6 +619,21 @@ def loss_quaternion(pose_pred, pose_targets, pose_weights):
 
     return loss
 
+def split_regression_branch(var_list1, var_list2):
+    regression_vars = ['fc6/weights:0', 'fc6/biases:0', 'fc7/weights:0', 'fc7/biases:0', 'fc8/weights:0', 'fc8/biases:0']
+    for var in regression_vars:
+        var_list1 = remove_item(var_list1, var)
+        var_list2 = keep_items(var_list2, regression_vars)
+
+    return var_list1, var_list2
+
+
+def remove_item(var_list, name):
+    return [i for i in var_list if i.name != name]
+
+def keep_items(var_list, names_list):
+    return [i for i in var_list if i.name in names_list]
+
 
 def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None, pretrained_ckpt=None, iters_train=40000, iters_val=10000):
     """Train a Fast R-CNN network."""
@@ -636,6 +651,7 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
                 scores = network.get_output('prob')
                 # scores_val = network.get_output2('prob')
                 labels = network.get_output('gt_label_weight')
+
                 # labels_val = network.get_output2('gt_label_weight')
                 loss_cls = loss_cross_entropy_single_frame(scores, labels)
                 # loss_cls_val = loss_cross_entropy_single_frame(scores_val, labels_val)
@@ -680,11 +696,17 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
         labels = network.get_output('labels_gt_2d')
         loss = loss_cross_entropy(scores, labels) + loss_regu
 
+    all_without_regression_branch, regression_vars = split_regression_branch(tf.trainable_variables(), tf.trainable_variables())
+
+    print("######### VARS ###########")
+    print(all_without_regression_branch)
+    print(regression_vars)
+
     # optimizer
     global_step = tf.Variable(0, trainable=False)
     starter_learning_rate = cfg.TRAIN.LEARNING_RATE
     learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step,
-                                               cfg.TRAIN.STEPSIZE, 0.1, staircase=True)
+                                               cfg.TRAIN.STEPSIZE, 0.5, staircase=True)
     momentum = cfg.TRAIN.MOMENTUM
     train_op = tf.train.MomentumOptimizer(learning_rate, momentum).minimize(loss, global_step=global_step)
     # val_op = tf.train.MomentumOptimizer(learning_rate, momentum).minimize(loss_val, global_step=global_step)

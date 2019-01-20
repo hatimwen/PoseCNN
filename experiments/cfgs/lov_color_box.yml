@@ -7,7 +7,7 @@ TRAIN:
   LEARNING_RATE: 0.0001
   MOMENTUM: 0.9
   GAMMA: 0.1
-  STEPSIZE: 800
+  STEPSIZE: 1400
   SYMSIZE: 0
   SCALES_BASE: !!python/tuple [1.0]
   IMS_PER_BATCH: 2
@@ -18,7 +18,7 @@ TRAIN:
   SNAPSHOT_PREFIX: vgg16_fcn_color_single_frame_2d_pose_add_sym
   USE_FLIPPED: False
   CHROMATIC: True
-  ADD_NOISE: True
+  ADD_NOISE: False
   VOTING_THRESHOLD: 100
   VERTEX_REG_2D: True
   VERTEX_REG_3D: False
