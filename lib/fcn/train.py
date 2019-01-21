@@ -469,7 +469,6 @@ def get_val_roidb(imdb):
 
 def load_and_enqueue_val(sess, net, data_layer, coord, iters=0):
     iter = 0
-    run_options = tf.RunOptions(timeout_in_ms=10000)
     while coord.run and iter < iters:
         data_layer._validation = True
         blobs = data_layer.forward(iter)
