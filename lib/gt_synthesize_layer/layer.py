@@ -20,7 +20,7 @@ import scipy.io
 class GtSynthesizeLayer(object):
     """FCN data layer used for training."""
 
-    def __init__(self, roidb, roidb_val, num_classes, extents, points, symmetry, cache_path, name, data_queue, model_file, pose_file):
+    def __init__(self, roidb, roidb_val, num_classes, extents, points, symmetry, cache_path, name, data_queue, model_file, pose_file, class_colors=None):
         """Set the roidb to be used by this layer during training."""
         self._roidb = roidb
         self._roidb_val = roidb_val
@@ -38,6 +38,7 @@ class GtSynthesizeLayer(object):
         self._build_background_depth_images()
         self._read_camera_parameters()
         self._validation = False
+        self._class_colors = class_colors
 
     def _shuffle_roidb_inds(self):
         """Randomly permute the training roidb."""
@@ -133,7 +134,8 @@ class GtSynthesizeLayer(object):
             backgrounds = self._backgrounds_depth
         else:
             backgrounds = self._backgrounds
-        return get_minibatch(minibatch_db, self._extents, self._points, self._symmetry, self._num_classes, backgrounds, self._intrinsic_matrix, self._data_queue, db_inds_syn, is_syn, db_inds_adapt, is_adapt, is_symmetric)
+        return get_minibatch(minibatch_db, self._extents, self._points, self._symmetry, self._num_classes, backgrounds, self._intrinsic_matrix, self._data_queue, db_inds_syn,
+                             is_syn, db_inds_adapt, is_adapt, is_symmetric, self._class_colors)
             
     def forward(self, iter):
         """Get blobs and copy them into this layer's top blob vector."""

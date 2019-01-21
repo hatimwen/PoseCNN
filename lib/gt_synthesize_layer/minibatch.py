@@ -22,7 +22,7 @@ from transforms3d.quaternions import mat2quat, quat2mat
 from utils.timer import Timer
 
 def get_minibatch(roidb, extents, points, symmetry, num_classes, backgrounds, intrinsic_matrix, \
-    data_queue, db_inds_syn, is_syn, db_inds_adapt, is_adapt, is_symmetric):
+    data_queue, db_inds_syn, is_syn, db_inds_adapt, is_adapt, is_symmetric, class_colors=None):
     """Given a roidb, construct a minibatch sampled from it."""
 
     # Get the input image blob, formatted for tensorflow
@@ -43,7 +43,7 @@ def get_minibatch(roidb, extents, points, symmetry, num_classes, backgrounds, in
     # For debug visualizations
     if cfg.TRAIN.VISUALIZE:
         if cfg.TRAIN.SEGMENTATION:
-            _vis_minibatch(im_blob, im_depth_blob, depth_blob, label_blob, meta_data_blob, vertex_target_blob, pose_blob, extents)
+            _vis_minibatch(im_blob, im_depth_blob, depth_blob, label_blob, meta_data_blob, vertex_target_blob, pose_blob, extents, points, class_colors)
         else:
             _vis_minibatch_box(im_blob, gt_boxes)
 
@@ -648,7 +648,7 @@ def _get_bb3D(extent):
     return bb
 
 
-def _vis_minibatch(im_blob, im_depth_blob, depth_blob, label_blob, meta_data_blob, vertex_target_blob, pose_blob, extents):
+def _vis_minibatch(im_blob, im_depth_blob, depth_blob, label_blob, meta_data_blob, vertex_target_blob, pose_blob, extents, points, class_colors=None):
     """Visualize a mini-batch for debugging."""
     import matplotlib.pyplot as plt
 
@@ -689,6 +689,16 @@ def _vis_minibatch(im_blob, im_depth_blob, depth_blob, label_blob, meta_data_blo
             y2 = np.max(x2d[1, :])
             plt.gca().add_patch(
                 plt.Rectangle((x1, y1), x2-x1, y2-y1, fill=False, edgecolor='g', linewidth=3))
+
+            cls = 1
+            x3d = np.ones((4, points.shape[1]), dtype=np.float32)
+            x3d[0, :] = points[cls, :, 0]
+            x3d[1, :] = points[cls, :, 1]
+            x3d[2, :] = points[cls, :, 2]
+            x2d = np.matmul(intrinsic_matrix, np.matmul(RT, x3d))
+            x2d[0, :] = np.divide(x2d[0, :], x2d[2, :])
+            x2d[1, :] = np.divide(x2d[1, :], x2d[2, :])
+            plt.plot(x2d[0, :], x2d[1, :], '.', color=np.divide(class_colors[cls], 255.0), alpha=0.5)
 
         # show depth image
         #depth = depth_blob[i, :, :, 0]
