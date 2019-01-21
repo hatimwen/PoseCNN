@@ -12,9 +12,8 @@ echo Logging output to "$LOG"
 
 # train FCN for single frames
 export LD_PRELOAD=/mnt/drive_c/datasets/kaju/tcmalloc_libs/libtcmalloc.so.4
-
+#--ckpt /mnt/drive_c/datasets/kaju/PoseCNN/output/lov/lov_000_box_train/run14/vgg16_fcn_color_single_frame_2d_pose_add_sym_lov_box_iter_62_epoch_26.ckpt \
 time ./tools/train_net.py --gpu 0 \
-	--ckpt /mnt/drive_c/datasets/kaju/PoseCNN/output/lov/lov_000_box_train/run14/vgg16_fcn_color_single_frame_2d_pose_add_sym_lov_box_iter_62_epoch_26.ckpt \
   --network vgg16_convs \
   --weights data/imagenet_models/vgg16.npy \
   --imdb lov_single_000_box_train \
