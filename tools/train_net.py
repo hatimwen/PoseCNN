@@ -307,7 +307,10 @@ if __name__ == '__main__':
     cfg.CAD = args.cad_name
     cfg.POSE = args.pose_name
     cfg.IS_TRAIN = True
-    cfg.TRAIN.IMS_PER_BATCH = 8
+    if cfg.INPUT == "RGBD":
+        cfg.TRAIN.IMS_PER_BATCH = 4
+    else:
+        cfg.TRAIN.IMS_PER_BATCH = 8
     files = ["data/LOV/indexes/000_box_train.txt", "data/LOV/indexes/000_box_val.txt"]
     batch_sizes = []
     iters = []

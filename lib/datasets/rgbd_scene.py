@@ -101,7 +101,7 @@ class rgbd_scene(datasets.imdb):
         """
         Load the indexes listed in this dataset's image set file.
         """
-        image_set_file = os.path.join(self._rgbd_scene_path, self._image_set + '.txt')
+        image_set_file = os.path.join(self._rgbd_scene_path, 'indexes', '000_box_train.txt')
         assert os.path.exists(image_set_file), \
                 'Path does not exist: {}'.format(image_set_file)
 
@@ -114,7 +114,7 @@ class rgbd_scene(datasets.imdb):
         Load the indexes listed in this dataset's image set file.
         """
 
-        image_set_file = os.path.join(self._rgbd_scene_path, self._image_set + 'val.txt')
+        image_set_file = os.path.join(self._rgbd_scene_path, 'indexes','000_box_val.txt')
         assert os.path.exists(image_set_file), \
             'Path does not exist: {}'.format(image_set_file)
 
@@ -126,7 +126,7 @@ class rgbd_scene(datasets.imdb):
         """
         Return the default path where KITTI is expected to be installed.
         """
-        return os.path.join(datasets.ROOT_DIR, 'data', 'RGBDScene')
+        return os.path.join(datasets.ROOT_DIR, 'data', 'LOV')
 
     def gt_roidb_val(self):
         """
