@@ -6,7 +6,6 @@
 # --------------------------------------------------------
 
 """Blob helper functions."""
-
 import numpy as np
 import cv2
 
@@ -108,7 +107,7 @@ def add_noise(image):
     if r < 0.9:
         row,col,ch= image.shape
         mean = 0
-        var = np.random.rand(1) * 0.3 * 256
+        var = np.random.rand(1) * 0.0001 * 256
         sigma = var**0.5
         gauss = sigma * np.random.randn(row,col) + mean
         gauss = np.repeat(gauss[:, :, np.newaxis], ch, axis=2)
