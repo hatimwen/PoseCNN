@@ -11,8 +11,10 @@ def main():
     lov_path = config_dict["lov_path"]
     print(lov_path)
     # trainlist = open(os.path.join(lov_path, "000_box_train.txt"), "r")
-    dataset = "dataset4.1"
-    trainlist = sorted(os.listdir(os.path.join(base_path, dataset)))
+    dataset = "dataset1.6"
+    dataset_path = os.path.join(base_path, dataset)
+    print("Visualizing dataset: {}".format(dataset_path))
+    trainlist = sorted(os.listdir(dataset_path))
     current = 0
     for line in trainlist:
         counter_str = line.split("-")[0]

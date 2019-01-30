@@ -101,8 +101,8 @@ if __name__ == '__main__':
 
     # construct meta data
     # K = np.array([[565.2146606445312, 0.0, 316.7839657704098], [0.0, 527.93408203125, 259.8812293402443], [0.0, 0.0, 1.0]])
-    K = np.array([[1066.778, 0, 312.9869], [0, 1067.487, 241.3109], [0, 0, 1]])
-    meta_data = dict({'intrinsic_matrix': K, 'factor_depth': 1000.0})
+    K = np.array([[610.55994, 0, 306.86169], [0, 610.32086, 240.94547], [0, 0, 1]])
+    meta_data = dict({'intrinsic_matrix': K, 'factor_depth': 10000.0})
     print meta_data
 
     cfg.GPU_ID = args.gpu_id

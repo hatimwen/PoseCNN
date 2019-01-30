@@ -3,8 +3,12 @@ import yaml
 
 
 # blender uses wxyz and ros xyzw
-def ros_to_blender_quat(qaut):
-    return qaut[-1], qaut[0], qaut[1], qaut[2]
+def ros_to_blender_quat(quat):
+    return quat[3], quat[0], quat[1], quat[2]
+
+
+def blender_to_ros_quat(quat):
+    return quat[1], quat[2], quat[3], quat[0]
 
 
 def create_dataset_folder(dataset):
@@ -23,3 +27,11 @@ def get_filename_prefix(counter):
     img_number = "0" * (6 - len(str(counter)))
     prefix = img_number + str(counter)
     return prefix
+
+
+# excpects quat in xyzw form
+def invert_quat(quat):
+    quat = ros_to_blender_quat(quat)
+    norm = float(quat[0]**2 + quat[1]**2 + quat[2]**2 + quat[3]**2)
+    quat_inverse = [quat[0]/norm, -quat[1]/norm, -quat[2]/norm, -quat[3]/norm]
+    return blender_to_ros_quat(quat_inverse)

@@ -161,6 +161,7 @@ def main():
 
         counter_color = 1
         counter_depth = 1
+        counter_images_skipped = 0
         if export_images or export_depth:
             bridge = CvBridge()
         if export_tf:
@@ -175,7 +176,7 @@ def main():
                 center = []
                 try:
                     if export_tf or export_meta:
-                        (trans, rot) = tf_t.lookupTransform("vicon", "camera", msg.header.stamp)
+                        (trans, rot) = tf_t.lookupTransform("vicon", "camera_color_optical_frame", msg.header.stamp)
                         if export_tf:
                             f.write(str(trans + rot) + "\n")
 
@@ -186,7 +187,7 @@ def main():
                         cv2.imwrite(image_path, image)
 
                     if export_meta:
-                        (trans_cam, rot_cam) = tf_t.lookupTransform("camera", "vicon", msg.header.stamp)
+                        (trans_cam, rot_cam) = tf_t.lookupTransform("camera_color_optical_frame", "vicon", msg.header.stamp)
                         camera_quat = Quaternion(ros_to_blender_quat(rot_cam))
                         camera_rot = camera_quat.rotation_matrix
                         camera_rodrigues, jacobian = cv2.Rodrigues(camera_rot)
@@ -203,7 +204,7 @@ def main():
                         mat_dict["rotation_translation_matrix"] = rotation_translation_matrix
                         poses = np.empty((3, 4))
                         for i in range(num_boxes):
-                            (trans, rot) = tf_t.lookupTransform("camera", "box" + str(i + 1) + "_static", msg.header.stamp)
+                            (trans, rot) = tf_t.lookupTransform("camera_color_optical_frame", "box" + str(i + 1) + "_static", msg.header.stamp)
                             pose = rot_trans_to_matrix(rot, trans)
                             poses = np.dstack((poses, pose))
                         poses = np.delete(poses, 0, axis=2)
@@ -211,8 +212,9 @@ def main():
                         meta_mat_path = os.path.join(Dataset.data_output_path, dataset.name, prefix + '-meta.mat')
                         sio.savemat(meta_mat_path, mat_dict)
                     counter_color += 1
-                except tf.ExtrapolationException:
-                    print("Skipped image")
+                except tf.ExtrapolationException as e:
+                    print(e)
+                    counter_images_skipped += 1
 
             if topic == topics[1]:
                 # passthrough makes all images very dark
@@ -227,6 +229,8 @@ def main():
                     image_path = os.path.join(Dataset.data_output_path, dataset.name, prefix + '-depth.png')
                     cv2.imwrite(image_path, image)
                 counter_depth += 1
+
+        print("Skipped {} images of {} total images".format(counter_images_skipped, counter_color))
 
         if export_tf:
             f.close()
