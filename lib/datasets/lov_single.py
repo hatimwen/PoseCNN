@@ -329,7 +329,8 @@ class lov_single(datasets.imdb):
         image_path = self.image_path_from_index(index)
 
         # depth path
-        depth_path = self.depth_path_from_index(index)
+        #depth_path = self.depth_path_from_index(index)
+        depth_path = ""
 
         # label path
         label_path = self.label_path_from_index(index)

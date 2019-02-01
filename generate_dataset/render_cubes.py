@@ -109,7 +109,7 @@ def change_boxes_color(color, increase_color):
             if increase_color:
                 # Fix floating point error for rgb color 6
                 if object_name == "Cube4":
-                    color = add_tuples_elementwise(color, (2 / (3 * 255.0), 0, 0))
+                    color = add_tuples_elementwise(color, (1.5 / (3 * 255.0), 0, 0))
                 else:
                     color = add_tuples_elementwise(color, (1 / (3 * 255.0), 0, 0))
 
