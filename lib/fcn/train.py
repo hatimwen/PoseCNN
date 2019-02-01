@@ -20,6 +20,7 @@ from tensorflow.python import debug as tf_debug
 import sys
 import threading
 import math
+import clr
 
 
 class Coordinator:
@@ -709,7 +710,8 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
     learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step,
                                                cfg.TRAIN.STEPSIZE, 0.5, staircase=False)
     momentum = cfg.TRAIN.MOMENTUM
-    train_op = tf.train.MomentumOptimizer(learning_rate, momentum).minimize(loss, global_step=global_step)
+    train_op = tf.train.MomentumOptimizer(clr.cyclic_learning_rate(global_step=global_step, learning_rate=starter_learning_rate, max_lr=starter_learning_rate*10, step_size=2,
+                                                                   mode='triangular2', gamma=0.99994), momentum).minimize(loss, global_step=global_step)
     # val_op = tf.train.MomentumOptimizer(learning_rate, momentum).minimize(loss_val, global_step=global_step)
     # val_dict = {"val_op": val_op,
     #             "loss_val": loss_val,

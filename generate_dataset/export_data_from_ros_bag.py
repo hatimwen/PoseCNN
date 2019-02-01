@@ -137,7 +137,8 @@ def main():
             with open(os.path.join("data", dataset.name, "box_positions.txt"), "w") as f:
                 for i in range(num_boxes):
                     time = rospy.Time(int(times[i][0]), int(times[i][1]))
-                    (trans, rot) = tf_t.lookupTransform("vicon", "box" + str(i + 1), time)
+                    (trans, rot) = tf_t.lookupTransform("vicon", "box" + str(i + 1) + "_static", time)
+                    # (trans, rot) = tf_t.lookupTransform("vicon", "box" + str(i + 1), time)
                     box_translations.append(trans)
                     f.write(str(trans + rot) + "\n")
 

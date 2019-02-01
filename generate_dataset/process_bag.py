@@ -50,27 +50,56 @@ def get_datasets():
 def main():
     subprocess.call(["rviz"])
     subprocess.call(["roslaunch "])
-    # datasets = get_datasets()
-    # bridge = CvBridge()
-    # for dataset in datasets:
-    #     print("Preparing " + dataset.name)
-    #     num_boxes = dataset.num_boxes
-    #     times = dataset.times
-    #     start_time = dataset.start_time
-    #     end_time = dataset.end_time
-    #     bag_path = os.path.join(Dataset.bags_path, dataset.name + ".bag")
-    #     print("Opening " + bag_path)
-    #     bag = rosbag.Bag(bag_path)
-    #     topics = ["/camera/color/image_raw", "/camera/aligned_depth_to_color/image_raw", "/tf"]
-    #     bag = rosbag.Bag(os.path.join(Dataset.bags_path, dataset.name + ".bag"))
-    #     for topic, msg, t in bag.read_messages(topics=topics):
-    #         if topic == "/tf":
-    #             print(msg)
-    #         else:
-    #             image = bridge.imgmsg_to_cv2(msg, "bgr8")
-    #             cv2.imshow("Image", image)
-    #             cv2.waitKey(10)
+    datasets = get_datasets()
+    bridge = CvBridge()
+    for dataset in datasets:
+        print("Preparing " + dataset.name)
+        num_boxes = dataset.num_boxes
+        times = dataset.times
+        start_time = dataset.start_time
+        end_time = dataset.end_time
+        bag_path = os.path.join(Dataset.bags_path, dataset.name + ".bag")
+        print("Opening " + bag_path)
+        bag = rosbag.Bag(bag_path)
+        topics = ["/camera/color/image_raw", "/camera/aligned_depth_to_color/image_raw", "/tf"]
+        for topic, msg, t in bag.read_messages(topics=topics):
+            if topic == "/tf":
+                print(msg)
+            else:
+                image = bridge.imgmsg_to_cv2(msg, "bgr8")
+                cv2.imshow("Image", image)
+                cv2.waitKey(10)
+
+
+def change_message_to_static_transform(msg):
+    casted_msg = geometry_msgs.msg.TransformStamped()
+    casted_msg.header = msg_tf.header
+    casted_msg.child_frame_id = msg_tf.child_frame_id
+    casted_msg.transform.translation.x = msg_tf.transform.translation.x
+    casted_msg.transform.translation.y = msg_tf.transform.translation.y
+    casted_msg.transform.translation.z = msg_tf.transform.translation.z
+    casted_msg.transform.rotation.x = msg_tf.transform.rotation.x
+    casted_msg.transform.rotation.y = msg_tf.transform.rotation.y
+    casted_msg.transform.rotation.z = msg_tf.transform.rotation.z
+    casted_msg.transform.rotation.w = msg_tf.transform.rotation.w
+
+
+def main2():
+    bag = rosbag.Bag("../bag/dataset1.6.bag")
+    bridge = CvBridge()
+    topics = ["/camera/color/image_raw", "/camera/aligned_depth_to_color/image_raw", "/tf"]
+    for topic, msg, t in bag.read_messages(topics=topics):
+        if topic == "/tf":
+            print(msg)
+            new_msg = change_message_to_static_transform(msg.transform)
+            bag.write("/tf", , t)
+            bag.write
+        else:
+            image = bridge.imgmsg_to_cv2(msg, "bgr8")
+            cv2.imshow("Image", image)
+            cv2.waitKey(10)
+
 
 
 if __name__ == '__main__':
-    main()
+    main2()

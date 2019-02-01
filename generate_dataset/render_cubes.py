@@ -107,7 +107,11 @@ def change_boxes_color(color, increase_color):
             mat = cube.active_material
             mat.diffuse_color = color
             if increase_color:
-                color = add_tuples_elementwise(color, (1 / (3 * 255.0), 0, 0))
+                # Fix floating point error for rgb color 6
+                if object_name == "Cube4":
+                    color = add_tuples_elementwise(color, (2 / (3 * 255.0), 0, 0))
+                else:
+                    color = add_tuples_elementwise(color, (1 / (3 * 255.0), 0, 0))
 
 
 def setup_boxes(box_positions, box_sizes, color):
