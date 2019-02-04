@@ -279,6 +279,9 @@ class SolverWrapper(object):
                 train_writer.add_summary(loss_cls_summary, iters_train * epoch + iter_train)
                 train_writer.add_summary(loss_vertex_summary, iters_train * epoch + iter_train)
                 train_writer.add_summary(loss_pose_summary, iters_train * epoch + iter_train)
+                #starter_learning_rate = cfg.TRAIN.LEARNING_RATE
+                #lr = sess.run(clr.cyclic_learning_rate(global_step=iters_train * epoch + iter_train, learning_rate=starter_learning_rate, max_lr=starter_learning_rate*10, 
+                #                                       step_size=2, mode='triangular2', gamma=0.99994))
                 timer.toc()
 
                 print 'iter: %d / %d, loss: %.4f, loss_cls: %.4f, loss_vertex: %.4f, loss_pose: %.4f, lr: %.8f,  time: %.2f' % \
@@ -707,12 +710,14 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
     # optimizer
     global_step = tf.Variable(0, trainable=False)
     starter_learning_rate = cfg.TRAIN.LEARNING_RATE
-    learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step,
-                                               cfg.TRAIN.STEPSIZE, 0.5, staircase=False)
+    learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step, cfg.TRAIN.STEPSIZE, 0.5, staircase=False)
     momentum = cfg.TRAIN.MOMENTUM
-    train_op = tf.train.MomentumOptimizer(clr.cyclic_learning_rate(global_step=global_step, learning_rate=starter_learning_rate, max_lr=starter_learning_rate*10, step_size=2,
-                                                                   mode='triangular2', gamma=0.99994), momentum).minimize(loss, global_step=global_step)
-    # val_op = tf.train.MomentumOptimizer(learning_rate, momentum).minimize(loss_val, global_step=global_step)
+    #learning_rate = clr.cyclic_learning_rate(global_step=global_step, learning_rate=starter_learning_rate, max_lr=starter_learning_rate*10, step_size=2, 
+    #                                        mode='triangular2', gamma=0.99994)
+    #train_op = tf.train.MomentumOptimizer(clr.cyclic_learning_rate(global_step=global_step, learning_rate=starter_learning_rate, max_lr=starter_learning_rate*10, step_size=2,
+    #                                                               mode='triangular2', gamma=0.99994), momentum).minimize(loss, global_step=global_step)
+    train_op = tf.train.AdamOptimizer(learning_rate, momentum).minimize(loss, global_step=global_step)
+    # val_op = tf.train.AdamOptimizer(learning_rate, momentum).minimize(loss_val, global_step=global_step)
     # val_dict = {"val_op": val_op,
     #             "loss_val": loss_val,
     #             "loss_cls_vall": loss_cls_val,
