@@ -261,7 +261,7 @@ class SolverWrapper(object):
 
         last_snapshot_iter = -1
         timer = Timer()
-        epochs = 10000
+        epochs = 3
         for epoch in range(epochs):
             coord_train.run = True
             coord_val.run = True
@@ -703,14 +703,14 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
 
     all_without_regression_branch, regression_vars = split_regression_branch(tf.trainable_variables(), tf.trainable_variables())
 
-    print("######### VARS ###########")
-    print(all_without_regression_branch)
-    print(regression_vars)
+    # print("######### VARS ###########")
+    # print(all_without_regression_branch)
+    # print(regression_vars)
 
     # optimizer
     global_step = tf.Variable(0, trainable=False)
-    starter_learning_rate = cfg.TRAIN.LEARNING_RATE
-    learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step, cfg.TRAIN.STEPSIZE, 0.5, staircase=False)
+    learning_rate = cfg.TRAIN.LEARNING_RATE
+    # learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step, cfg.TRAIN.STEPSIZE, 0.5, staircase=False)
     momentum = cfg.TRAIN.MOMENTUM
     #learning_rate = clr.cyclic_learning_rate(global_step=global_step, learning_rate=starter_learning_rate, max_lr=starter_learning_rate*10, step_size=2, 
     #                                        mode='triangular2', gamma=0.99994)
