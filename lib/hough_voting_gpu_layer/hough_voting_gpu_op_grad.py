@@ -13,7 +13,8 @@ def _hough_voting_gpu_shape(op):
   output_shape_2 = tf.TensorShape([None, 4 * num_classes])
   output_shape_3 = tf.TensorShape([None, 4 * num_classes])
   output_shape_4 = tf.TensorShape([None])
-  return [output_shape_0, output_shape_1, output_shape_2, output_shape_3, output_shape_4]
+  output_shape_5 = tf.TensorShape([None])
+  return [output_shape_0, output_shape_1, output_shape_2, output_shape_3, output_shape_4, output_shape_5]
 
 @ops.RegisterGradient("Houghvotinggpu")
 def _hough_voting_gpu_grad(op, grad, tmp, tmp1, tmp2, _):
@@ -32,4 +33,4 @@ def _hough_voting_gpu_grad(op, grad, tmp, tmp1, tmp2, _):
   # compute gradient
   data_grad_prob, data_grad_vertex = hough_voting_gpu_op.hough_voting_gpu_grad(bottom_prob, bottom_vertex, grad)
 
-  return [data_grad_prob, data_grad_vertex, None, None, None]  # List of one Tensor, since we have two input
+  return [data_grad_prob, data_grad_vertex, None, None, None, None]  # List of one Tensor, since we have two input
