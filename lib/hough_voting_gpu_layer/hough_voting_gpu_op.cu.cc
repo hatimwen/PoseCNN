@@ -613,7 +613,7 @@ void set_gradients(float* top_label, float* top_vertex, int batch_size, int heig
 
 
 void HoughVotingLaucher(OpKernelContext* context,
-    const int* labelmap, const float* vertmap, const float* extents, const float* meta_data, const float* gt,
+    const int* labelmap, const float* vertmap, const float* extents, const float* meta_data, const float* gt, const float* cls_loss,
     const int batch_index, const int batch_size, const int height, const int width, const int num_classes, const int num_gt, 
     const int is_train, const float inlierThreshold, const int labelThreshold, const float votingThreshold, const float perThreshold, 
     const int skip_pixels, 
@@ -775,6 +775,7 @@ void HoughVotingLaucher(OpKernelContext* context,
     num_max_host = index_size;
   if (num_max_host > 0)
   {
+    printf("Cls loss: %f\n", *cls_loss);
     output_size = num_max_host;
     compute_rois_kernel<<<(output_size + kThreadsPerBlock - 1) / kThreadsPerBlock,
                          kThreadsPerBlock, 0, d.stream()>>>(

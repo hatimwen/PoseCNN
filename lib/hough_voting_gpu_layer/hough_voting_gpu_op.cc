@@ -45,6 +45,7 @@ REGISTER_OP("Houghvotinggpu")
     .Input("bottom_extents: T")
     .Input("bottom_meta_data: T")
     .Input("bottom_gt: T")
+    .Input("cls_loss: float")
     .Output("top_box: T")
     .Output("top_pose: T")
     .Output("top_target: T")
@@ -83,8 +84,8 @@ inline void compute_width_height(const int* labelmap, const float* vertmap, cv::
 
 // cuda functions
 void HoughVotingLaucher(OpKernelContext* context,
-    const int* labelmap, const float* vertmap, const float* extents, const float* meta_data, const float* gt,
-    const int batch_index, const int batch_size, const int height, const int width, const int num_classes, const int num_gt, 
+    const int* labelmap, const float* vertmap, const float* extents, const float* meta_data, const float* gt, const float* cls_loss,
+    const int batch_index, const int batch_size, const int height, const int width, const int num_classes, const int num_gt,
     const int is_train, const float inlierThreshold, const int labelThreshold, const float votingThreshold, const float perThreshold,
     const int skip_pixels,float* top_box, float* top_pose, float* top_target, float* top_weight, 
     int* top_domain, int* num_rois, const Eigen::GpuDevice& d);
@@ -345,6 +346,11 @@ class HoughvotinggpuOp<Eigen::GpuDevice, T> : public OpKernel {
     const Tensor& bottom_gt = context->input(4);
     const float* gt = bottom_gt.flat<float>().data();
 
+    const Tensor& bottom_cls_loss = context->input(5);
+    const float* cls_loss = bottom_cls_loss.flat<float>().data();
+
+    std::cout << *cls_loss << std::endl;
+
     int batch_size = bottom_label.dim_size(0);
     int height = bottom_label.dim_size(1);
     int width = bottom_label.dim_size(2);
@@ -370,7 +376,7 @@ class HoughvotinggpuOp<Eigen::GpuDevice, T> : public OpKernel {
       const int* labelmap = bottom_label.flat<int>().data() + n * height * width;
       const float* vertmap = bottom_vertex.flat<float>().data() + n * height * width * VERTEX_CHANNELS * num_classes;
       const float* meta_data = bottom_meta_data.flat<float>().data() + n * num_meta_data;
-      HoughVotingLaucher(context, labelmap, vertmap, extents, meta_data, gt, n, batch_size, height, width, num_classes, num_gt,
+      HoughVotingLaucher(context, labelmap, vertmap, extents, meta_data, gt, cls_loss, n, batch_size, height, width, num_classes, num_gt,
         is_train_, inlierThreshold, labelThreshold, threshold_vote_, threshold_percentage_, skip_pixels_,
         top_box, top_pose, top_target, top_weight, top_domain, num_rois_device, context->eigen_device<Eigen::GpuDevice>());
     }

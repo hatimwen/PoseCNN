@@ -276,7 +276,6 @@ class SolverWrapper(object):
                     loss_pose_value, loss_regu_value, lr, _ = sess.run([loss_op, loss_cls_op, loss_vertex_op, loss_pose_op, loss, loss_cls, \
                     loss_vertex, loss_pose, loss_regu, learning_rate, train_op])
                 current_iter = iters_train * epoch + iter_train
-                train_writer.add_summary(overlap_summary, current_iter)
                 train_writer.add_summary(loss_summary, current_iter)
                 train_writer.add_summary(loss_cls_summary, current_iter)
                 train_writer.add_summary(loss_vertex_summary, current_iter)
@@ -657,7 +656,6 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
         else:
             if cfg.TRAIN.VERTEX_REG_2D or cfg.TRAIN.VERTEX_REG_3D:
                 scores = network.get_output('prob')
-                # scores_val = network.get_output2('prob')
                 labels = network.get_output('gt_label_weight')
 
                 # labels_val = network.get_output2('gt_label_weight')

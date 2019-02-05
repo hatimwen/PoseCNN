@@ -165,9 +165,12 @@ class vgg16_convs(Network):
                      .conv(1, 1, 3 * self.num_classes, 1, 1, name='vertex_pred', relu=False, c_i=128))
 
                 if self.vertex_reg_2d:
-
-                    (self.feed('label_2d', 'vertex_pred', 'extents', 'meta_data', 'poses')
-                         .hough_voting_gpu(self.is_train, self.vote_threshold, self.vote_percentage, self.skip_pixels, name='hough'))
+                    from fcn.train import loss_cross_entropy_single_frame
+                    scores = self.get_output('prob')
+                    labels = self.get_output('gt_label_weight')
+                    self.layers['loss_cls'] = loss_cross_entropy_single_frame(scores, labels)
+                    (self.feed('label_2d', 'vertex_pred', 'extents', 'meta_data', 'poses', 'loss_cls')
+                         .hough_voting_gpu(self.is_train, self.vote_threshold, self.vote_percentage, self.skip_pixels, loss_cls, name='hough'))
 
                     self.layers['rois'] = self.get_output('hough')[0]
                     self.layers['poses_init'] = self.get_output('hough')[1]
