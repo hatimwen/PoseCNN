@@ -210,14 +210,13 @@ class SolverWrapper(object):
         coord.request_stop()
         coord.join([t])
 
-    def train_model_vertex_pose(self, sess, train_op, loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate, iters_train, iters_val, data_layer, network):
+    def train_model_vertex_pose(self, sess, train_op, loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate, iters_train, iters_val, data_layer):
         """Network training loop."""
         # add summary
         loss_op = tf.summary.scalar('loss', tf.squeeze(loss))
         loss_cls_op = tf.summary.scalar('loss_cls', tf.squeeze(loss_cls))
         loss_vertex_op = tf.summary.scalar('loss_vertex', tf.squeeze(loss_vertex))
         loss_pose_op = tf.summary.scalar('loss_pose', tf.squeeze(loss_pose))
-        overlap_op = tf.summary.scalar('overlap', network.get_output('overlap'))
 
         loss_placeholder = tf.placeholder(tf.float32, shape=())
         loss_cls_placeholder = tf.placeholder(tf.float32, shape=())
@@ -273,8 +272,8 @@ class SolverWrapper(object):
             for iter_train in range(iters_train):
 
                 timer.tic()
-                loss_summary, loss_cls_summary, loss_vertex_summary, loss_pose_summary, overlap_summary, loss_value, loss_cls_value, loss_vertex_value, \
-                    loss_pose_value, loss_regu_value,lr, _ = sess.run([loss_op, loss_cls_op, loss_vertex_op, loss_pose_op, overlap_op, loss, loss_cls, \
+                loss_summary, loss_cls_summary, loss_vertex_summary, loss_pose_summary, loss_value, loss_cls_value, loss_vertex_value, \
+                    loss_pose_value, loss_regu_value, lr, _ = sess.run([loss_op, loss_cls_op, loss_vertex_op, loss_pose_op, loss, loss_cls, \
                     loss_vertex, loss_pose, loss_regu, learning_rate, train_op])
                 current_iter = iters_train * epoch + iter_train
                 train_writer.add_summary(overlap_summary, current_iter)
@@ -752,7 +751,7 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
                     sw.train_model_vertex_pose_adapt(sess, train_op, loss, loss_cls, loss_vertex, loss_pose, \
                                                      loss_domain, label_domain, domain_label, learning_rate, iters_train, data_layer)
                 else:
-                    sw.train_model_vertex_pose(sess, train_op, loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate, iters_train, iters_val, data_layer, network)
+                    sw.train_model_vertex_pose(sess, train_op, loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate, iters_train, iters_val, data_layer)
             else:
                 sw.train_model_vertex(sess, train_op, loss, loss_cls, loss_vertex, loss_regu, learning_rate, iters_train, data_layer)
         else:

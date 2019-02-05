@@ -173,7 +173,6 @@ class vgg16_convs(Network):
                     self.layers['poses_init'] = self.get_output('hough')[1]
                     self.layers['poses_target'] = self.get_output('hough')[2]
                     self.layers['poses_weight'] = self.get_output('hough')[3]
-                    self.layers['overlap'] = self.get_output('hough')[4]
                     
                     if self.pose_reg:
                         # roi pooling without masking
