@@ -22,7 +22,7 @@ void HoughVotingLaucher(OpKernelContext* context,
     const int is_train, const float inlierThreshold, const float votingThreshold, const float perThreshold,
     float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain, int* num_rois, const Eigen::GpuDevice& d);
 
-void reset_outputs(float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain, int* num_rois, int num_classes);
+void reset_outputs(float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain, int* num_rois, float* top_overlap, int num_classes);
 
 void copy_num_rois(int* num_rois, int* num_rois_device);
 

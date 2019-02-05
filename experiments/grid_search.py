@@ -1,5 +1,6 @@
 import subprocess
 from scipy import arange
+import os
 
 
 def main():
@@ -12,7 +13,7 @@ TRAIN:
   LEARNING_RATE: {}
   MOMENTUM: 0.9
   GAMMA: 0.1
-  STEPSIZE: 1000
+  STEPSIZE: 10000
   SYMSIZE: 0
   SCALES_BASE: !!python/tuple [1.0]
   IMS_PER_BATCH: 2
@@ -57,13 +58,14 @@ TEST:
     for lr in arange(*lr_intverals):
         for pose_wheight in arange(*pose_wheight_intverals):
             for vertex_wheight in arange(*vertex_wheight_intverals):
-                config_out = open("../experiments/cfgs/lov_color_box.yml", "w")
-                config_formatted = config.format(lr, float(vertex_wheight), float(pose_wheight))
+                config_out = open("experiments/cfgs/lov_color_box.yml", "w")
+                lr_str = "{:.5f}".format(lr) if lr < 0.0001 else "{:.4f}".format(lr)
+                config_formatted = config.format(lr_str, float(vertex_wheight), float(pose_wheight))
                 print("Run {}:\nlr: {}\nvertex_wheight: {}\npose_wheight: {}".format(counter, lr, vertex_wheight, pose_wheight))
                 config_out.write(config_formatted)
                 config_out.close()
                 counter += 1
-                subprocess.call(['./../experiments/scripts/lov_color_box_train.sh 0'], env={"PATH": "/home/satco/remote_home/envs/python3.6/bin/"})
+                subprocess.call(['./experiments/scripts/lov_color_box_train.sh 0'], shell=True, env=os.environ)
 
 
 if __name__ == '__main__':

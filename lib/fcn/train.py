@@ -210,13 +210,14 @@ class SolverWrapper(object):
         coord.request_stop()
         coord.join([t])
 
-    def train_model_vertex_pose(self, sess, train_op, loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate, iters_train, iters_val, data_layer):
+    def train_model_vertex_pose(self, sess, train_op, loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate, iters_train, iters_val, data_layer, network):
         """Network training loop."""
         # add summary
         loss_op = tf.summary.scalar('loss', tf.squeeze(loss))
         loss_cls_op = tf.summary.scalar('loss_cls', tf.squeeze(loss_cls))
         loss_vertex_op = tf.summary.scalar('loss_vertex', tf.squeeze(loss_vertex))
         loss_pose_op = tf.summary.scalar('loss_pose', tf.squeeze(loss_pose))
+        overlap_op = tf.summary.scalar('overlap', network.get_output('overlap'))
 
         loss_placeholder = tf.placeholder(tf.float32, shape=())
         loss_cls_placeholder = tf.placeholder(tf.float32, shape=())
@@ -272,13 +273,15 @@ class SolverWrapper(object):
             for iter_train in range(iters_train):
 
                 timer.tic()
-                loss_summary, loss_cls_summary, loss_vertex_summary, loss_pose_summary, loss_value, loss_cls_value, loss_vertex_value, \
-                    loss_pose_value, loss_regu_value, lr, _ = sess.run([loss_op, loss_cls_op, loss_vertex_op, loss_pose_op, loss, loss_cls, \
+                loss_summary, loss_cls_summary, loss_vertex_summary, loss_pose_summary, overlap_summary, loss_value, loss_cls_value, loss_vertex_value, \
+                    loss_pose_value, loss_regu_value,lr, _ = sess.run([loss_op, loss_cls_op, loss_vertex_op, loss_pose_op, overlap_op, loss, loss_cls, \
                     loss_vertex, loss_pose, loss_regu, learning_rate, train_op])
-                train_writer.add_summary(loss_summary, iters_train * epoch + iter_train)
-                train_writer.add_summary(loss_cls_summary, iters_train * epoch + iter_train)
-                train_writer.add_summary(loss_vertex_summary, iters_train * epoch + iter_train)
-                train_writer.add_summary(loss_pose_summary, iters_train * epoch + iter_train)
+                current_iter = iters_train * epoch + iter_train
+                train_writer.add_summary(overlap_summary, current_iter)
+                train_writer.add_summary(loss_summary, current_iter)
+                train_writer.add_summary(loss_cls_summary, current_iter)
+                train_writer.add_summary(loss_vertex_summary, current_iter)
+                train_writer.add_summary(loss_pose_summary, current_iter)
                 #starter_learning_rate = cfg.TRAIN.LEARNING_RATE
                 #lr = sess.run(clr.cyclic_learning_rate(global_step=iters_train * epoch + iter_train, learning_rate=starter_learning_rate, max_lr=starter_learning_rate*10, 
                 #                                       step_size=2, mode='triangular2', gamma=0.99994))
@@ -334,10 +337,11 @@ class SolverWrapper(object):
             loss_cls_val_summary = sess.run(loss_cls_val_op, feed_dict={loss_cls_placeholder: np.mean(losses_cls_val)})
             loss_vertex_val_summary = sess.run(loss_vertex_val_op, feed_dict={loss_vertex_placeholder: np.mean(losses_vertex_val)})
             loss_pose_val_summary = sess.run(loss_pose_val_op, feed_dict={loss_pose_placeholder: np.mean(losses_pose_val)})
-            val_writer.add_summary(loss_val_summary, iters_train * (epoch + 1))
-            val_writer.add_summary(loss_cls_val_summary, iters_train * (epoch + 1))
-            val_writer.add_summary(loss_vertex_val_summary, iters_train * (epoch + 1))
-            val_writer.add_summary(loss_pose_val_summary, iters_train * (epoch + 1))
+            current_iter = iters_train * (epoch + 1)
+            val_writer.add_summary(loss_val_summary, current_iter)
+            val_writer.add_summary(loss_cls_val_summary, current_iter)
+            val_writer.add_summary(loss_vertex_val_summary, current_iter)
+            val_writer.add_summary(loss_pose_val_summary, current_iter)
 
         sess.run(self.net.close_queue_op)
 
@@ -709,8 +713,8 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
 
     # optimizer
     global_step = tf.Variable(0, trainable=False)
-    learning_rate = cfg.TRAIN.LEARNING_RATE
-    # learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step, cfg.TRAIN.STEPSIZE, 0.5, staircase=False)
+    starter_learning_rate = cfg.TRAIN.LEARNING_RATE
+    learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step, cfg.TRAIN.STEPSIZE, 0.5, staircase=False)
     momentum = cfg.TRAIN.MOMENTUM
     #learning_rate = clr.cyclic_learning_rate(global_step=global_step, learning_rate=starter_learning_rate, max_lr=starter_learning_rate*10, step_size=2, 
     #                                        mode='triangular2', gamma=0.99994)
@@ -748,7 +752,7 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
                     sw.train_model_vertex_pose_adapt(sess, train_op, loss, loss_cls, loss_vertex, loss_pose, \
                                                      loss_domain, label_domain, domain_label, learning_rate, iters_train, data_layer)
                 else:
-                    sw.train_model_vertex_pose(sess, train_op, loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate, iters_train, iters_val, data_layer)
+                    sw.train_model_vertex_pose(sess, train_op, loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate, iters_train, iters_val, data_layer, network)
             else:
                 sw.train_model_vertex(sess, train_op, loss, loss_cls, loss_vertex, loss_regu, learning_rate, iters_train, data_layer)
         else:

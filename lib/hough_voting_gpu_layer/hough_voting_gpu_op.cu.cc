@@ -385,7 +385,7 @@ __global__ void compute_max_indexes_kernel(const int nthreads, int* max_indexes,
 
 __global__ void compute_rois_kernel(const int nthreads, float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain,
     const float* extents, const float* meta_data, const float* gt, float* hough_space, float* hough_data, int* max_indexes, int* class_indexes,
-    int is_train, int batch_index, const int height, const int width, const int num_classes, const int num_gt, int* num_rois) 
+    int is_train, int batch_index, const int height, const int width, const int num_classes, const int num_gt, int* num_rois, float* overlap_sum, int* overlap_counter)
 {
   CUDA_1D_KERNEL_LOOP(index, nthreads)
   {
@@ -446,7 +446,9 @@ __global__ void compute_rois_kernel(const int nthreads, float* top_box, float* t
           int gt_ind = i;
 
           float overlap = compute_box_overlap(cls, extents, meta_data, gt + gt_ind * 13, top_box + roi_index * 7 + 2);
-          if (overlap > 0.9)
+          *overlap_sum += overlap;
+          *overlap_counter++;
+          if (overlap > 0.85)
           {
             for (int j = 0; j < 9; j++)
             {
@@ -576,7 +578,7 @@ __global__ void compute_rois_kernel(const int nthreads, float* top_box, float* t
 }
 
 
-void reset_outputs(float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain, int* num_rois, int num_classes)
+void reset_outputs(float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain, int* num_rois, float* top_overlap, int num_classes)
 {
   int num = MAX_ROI * 9;
   cudaMemset(top_box, 0, num * 7 * sizeof(float));
@@ -585,6 +587,7 @@ void reset_outputs(float* top_box, float* top_pose, float* top_target, float* to
   cudaMemset(top_weight, 0, num * 4 * num_classes * sizeof(float));
   cudaMemset(top_domain, 0, num * sizeof(int));
   cudaMemset(num_rois, 0, sizeof(int));
+  cudaMemset(top_overlap, 0, sizeof(float));
 }
 
 
@@ -594,14 +597,15 @@ void copy_num_rois(int* num_rois, int* num_rois_device)
 }
 
 
-void copy_outputs(float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain,
-  float* top_box_final, float* top_pose_final, float* top_target_final, float* top_weight_final, int* top_domain_final, int num_classes, int num_rois)
+void copy_outputs(float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain, float* top_overlap,
+  float* top_box_final, float* top_pose_final, float* top_target_final, float* top_weight_final, int* top_domain_final, int num_classes, float* top_overlap_final, int num_rois)
 {
   cudaMemcpy(top_box_final, top_box, num_rois * 7 * sizeof(float), cudaMemcpyDeviceToDevice);
   cudaMemcpy(top_pose_final, top_pose, num_rois * 7 * sizeof(float), cudaMemcpyDeviceToDevice);
   cudaMemcpy(top_target_final, top_target, num_rois * 4 * num_classes * sizeof(float), cudaMemcpyDeviceToDevice);
   cudaMemcpy(top_weight_final, top_weight, num_rois * 4 * num_classes * sizeof(float), cudaMemcpyDeviceToDevice);
   cudaMemcpy(top_domain_final, top_domain, num_rois * sizeof(int), cudaMemcpyDeviceToDevice);
+  cudaMemcpy(top_overlap_final, top_overlap, num_rois * sizeof(float), cudaMemcpyDeviceToDevice);
 }
 
 
@@ -617,7 +621,7 @@ void HoughVotingLaucher(OpKernelContext* context,
     const int batch_index, const int batch_size, const int height, const int width, const int num_classes, const int num_gt, 
     const int is_train, const float inlierThreshold, const int labelThreshold, const float votingThreshold, const float perThreshold, 
     const int skip_pixels, 
-    float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain, int* num_rois, const Eigen::GpuDevice& d)
+    float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain, float* top_overlap, int* num_rois, const Eigen::GpuDevice& d)
 {
   const int kThreadsPerBlock = 1024;
 // Fixes too many resources requested error
@@ -771,6 +775,12 @@ void HoughVotingLaucher(OpKernelContext* context,
   // step 4: compute outputs
   int num_max_host;
   cudaMemcpy(&num_max_host, num_max, sizeof(int), cudaMemcpyDeviceToHost);
+  float* overlap_sum_host = 0;
+  float* overlap_sum;
+  cudaMemcpy(&overlap_sum, overlap_sum_host, sizeof(float), cudaMemcpyHostToDevice);
+  int* overlap_counter_host = 0;
+  int* overlap_counter;
+  cudaMemcpy(&overlap_counter, overlap_counter_host, sizeof(int), cudaMemcpyHostToDevice);
   if (num_max_host >= index_size)
     num_max_host = index_size;
   if (num_max_host > 0)
@@ -780,10 +790,15 @@ void HoughVotingLaucher(OpKernelContext* context,
                          kThreadsPerBlock, 0, d.stream()>>>(
         output_size, top_box, top_pose, top_target, top_weight, top_domain,
         extents, meta_data, gt, hough_space, hough_data, max_indexes, class_indexes,
-        is_train, batch_index, height, width, num_classes, num_gt, num_rois);
+        is_train, batch_index, height, width, num_classes, num_gt, num_rois, overlap_sum, overlap_counter);
     cudaThreadSynchronize();
   }
-  
+  printf("SUM: %f\n", *overlap_sum);
+  printf("Counter: %i\n", *overlap_counter);
+  float avg = (*overlap_sum / *overlap_counter);
+  printf("Average: %f\n", avg);
+  *top_overlap = avg;
+
   // clean up
   free(array_sizes_host);
   free(class_indexes_host);
