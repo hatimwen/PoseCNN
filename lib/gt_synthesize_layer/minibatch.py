@@ -20,6 +20,8 @@ import scipy.io
 from normals import gpu_normals
 from transforms3d.quaternions import mat2quat, quat2mat
 from utils.timer import Timer
+import tensorflow as tf
+import matplotlib.pyplot as plt
 
 def get_minibatch(roidb, extents, points, symmetry, num_classes, backgrounds, intrinsic_matrix, \
     data_queue, db_inds_syn, is_syn, db_inds_adapt, is_adapt, is_symmetric, class_colors=None):
@@ -173,6 +175,18 @@ def _get_image_blob(roidb, scale_ind, num_classes, backgrounds, intrinsic_matrix
         if cfg.TRAIN.CHROMATIC:
             im = chromatic_transform(im)
 
+        random_hue = True
+        random_brightness = True
+        random_contrast = True
+
+        if random_hue:
+            im = tf.image.random_hue(im)
+        if random_brightness:
+            im = tf.image.random_brightness(im)
+        if random_contrast:
+            im = tf.image.random_brightness(im)
+
+
         if cfg.TRAIN.ADD_NOISE:
             im = add_noise(im)
 
@@ -183,6 +197,7 @@ def _get_image_blob(roidb, scale_ind, num_classes, backgrounds, intrinsic_matrix
         im_scale = cfg.TRAIN.SCALES_BASE[scale_ind]
         im = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_LINEAR)
         im_scales.append(im_scale)
+        plt.plot(im)
         processed_ims.append(im)
 
         # depth
@@ -650,8 +665,6 @@ def _get_bb3D(extent):
 
 def _vis_minibatch(im_blob, im_depth_blob, depth_blob, label_blob, meta_data_blob, vertex_target_blob, pose_blob, extents, points, class_colors=None):
     """Visualize a mini-batch for debugging."""
-    import matplotlib.pyplot as plt
-
     for i in xrange(im_blob.shape[0]):
         fig = plt.figure()
         # show image

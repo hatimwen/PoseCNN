@@ -16,7 +16,7 @@ TRAIN:
   SNAPSHOT_ITERS: 1000
   SNAPSHOT_INFIX: lov_box
   SNAPSHOT_PREFIX: vgg16_fcn_color_single_frame_2d_pose_add_sym
-  USE_FLIPPED: False
+  USE_FLIPPED: True
   CHROMATIC: True
   ADD_NOISE: True
   VOTING_THRESHOLD: 100
