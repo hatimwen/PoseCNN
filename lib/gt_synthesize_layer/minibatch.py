@@ -175,19 +175,6 @@ def _get_image_blob(roidb, scale_ind, num_classes, backgrounds, intrinsic_matrix
         if cfg.TRAIN.CHROMATIC:
             im = chromatic_transform(im)
 
-        random_hue = True
-        random_brightness = False
-        random_contrast = False
-
-        if random_hue:
-            sess = tf.Session()
-            with sess.as_default():
-                im = tf.image.random_hue(im, 0.5).eval()
-        if random_brightness:
-            im = tf.image.random_brightness(im)
-        if random_contrast:
-            im = tf.image.random_contrast(im)
-
         if cfg.TRAIN.ADD_NOISE:
             im = add_noise(im)
 
@@ -444,7 +431,6 @@ def _get_label_blob(roidb, intrinsic_matrix, data_out, num_classes, db_inds_syn,
                 if len(np.unique(cls_indexes)) < len(cls_indexes):
                     is_multi_instances = 1
                     # read mask image
-                    print(roidb[i])
                     mask = pad_im(cv2.imread(roidb[i]['mask'], cv2.IMREAD_UNCHANGED), 16)
                 else:
                     is_multi_instances = 0

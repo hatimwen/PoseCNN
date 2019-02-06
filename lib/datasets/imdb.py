@@ -137,6 +137,7 @@ class imdb(object):
             entry = {'image' : self.roidb[i]['image'],
                      'depth' : self.roidb[i]['depth'],
                      'label' : self.roidb[i]['label'],
+                     'mask' : self.roidb[i]['mask'],
                      'meta_data' : self.roidb[i]['meta_data'],
                      'class_colors' : self.roidb[i]['class_colors'],
                      'class_weights' : self.roidb[i]['class_weights'],
