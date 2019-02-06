@@ -32,4 +32,4 @@ def _hough_voting_gpu_grad(op, grad, tmp, tmp1, tmp2, _):
   # compute gradient
   data_grad_prob, data_grad_vertex = hough_voting_gpu_op.hough_voting_gpu_grad(bottom_prob, bottom_vertex, grad)
 
-  return [data_grad_prob, data_grad_vertex, None, None, None]  # List of one Tensor, since we have two input
+  return [data_grad_prob, data_grad_vertex, None, None, None, None]  # List of one Tensor, since we have two input
