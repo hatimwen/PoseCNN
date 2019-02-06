@@ -12,14 +12,17 @@ from transforms3d.quaternions import quat2mat
 
 
 def test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count):
-    if depth.encoding == '32FC1':
-        depth_32 = cv_bridge.imgmsg_to_cv2(depth) * 1000
-        depth_cv = np.array(depth_32, dtype=np.uint16)
-    elif depth.encoding == '16UC1':
-        depth_cv = cv_bridge.imgmsg_to_cv2(depth)
+    if depth is not None:
+        if depth.encoding == '32FC1':
+            depth_32 = cv_bridge.imgmsg_to_cv2(depth) * 1000
+            depth_cv = np.array(depth_32, dtype=np.uint16)
+        elif depth.encoding == '16UC1':
+            depth_cv = cv_bridge.imgmsg_to_cv2(depth)
+        else:
+            rospy.logerr_throttle(1, 'Unsupported depth type. Expected 16UC1 or 32FC1, got {}'.format(depth.encoding))
+            return
     else:
-        rospy.logerr_throttle(1, 'Unsupported depth type. Expected 16UC1 or 32FC1, got {}'.format(depth.encoding))
-        return
+        depth_cv = None
 
     # image
     im = cv_bridge.imgmsg_to_cv2(rgb, 'bgr8')
@@ -28,9 +31,10 @@ def test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count):
     filename = 'images/%06d-color.png' % count
     cv2.imwrite(filename, im)
 
-    filename = 'images/%06d-depth.png' % count
-    cv2.imwrite(filename, depth_cv)
-    print filename
+    if depth is not None:
+        filename = 'images/%06d-depth.png' % count
+        cv2.imwrite(filename, depth_cv)
+        print filename
 
     # run network
     labels, probs, vertex_pred, rois, poses = im_segment_single_frame(sess, network, im, depth_cv, meta_data, \
@@ -87,16 +91,22 @@ def get_image_blob(im, im_depth, meta_data, cfg):
     im = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_LINEAR)
     im_scale_factors.append(im_scale)
     processed_ims.append(im)
+    # Create a blob to hold the input images
+    blob = im_list_to_blob(processed_ims, 3)
 
     # depth
-    im_orig = im_depth.astype(np.float32, copy=True)
-    im_orig = im_orig / im_orig.max() * 255
-    im_orig = np.tile(im_orig[:,:,np.newaxis], (1,1,3))
-    im_orig -= cfg.PIXEL_MEANS
+    if im_depth is not None:
+        im_orig = im_depth.astype(np.float32, copy=True)
+        im_orig = im_orig / im_orig.max() * 255
+        im_orig = np.tile(im_orig[:,:,np.newaxis], (1,1,3))
+        im_orig -= cfg.PIXEL_MEANS
 
-    processed_ims_depth = []
-    im = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_LINEAR)
-    processed_ims_depth.append(im)
+        processed_ims_depth = []
+        im = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_LINEAR)
+        processed_ims_depth.append(im)
+        blob_depth = im_list_to_blob(processed_ims_depth, 3)
+    else:
+        blob_depth = None
 
     if cfg.INPUT == 'NORMAL':
         # meta data
@@ -119,13 +129,10 @@ def get_image_blob(im, im_depth, meta_data, cfg):
         im_orig -= cfg.PIXEL_MEANS
         im_normal = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_LINEAR)
         processed_ims_normal.append(im_normal)
+        # Create a blob to hold the input images
         blob_normal = im_list_to_blob(processed_ims_normal, 3)
     else:
         blob_normal = []
-
-    # Create a blob to hold the input images
-    blob = im_list_to_blob(processed_ims, 3)
-    blob_depth = im_list_to_blob(processed_ims_depth, 3)
         
     return blob, blob_depth, blob_normal, np.array(im_scale_factors)
 
@@ -151,8 +158,15 @@ def im_segment_single_frame(sess, net, im, im_depth, meta_data, extents, points,
     meta_data_blob[0,0,0,:] = mdata
 
     # use a fake label blob of ones
-    height = int(im_depth.shape[0] * im_scale)
-    width = int(im_depth.shape[1] * im_scale)
+    if im_depth is not None:
+        img_for_shape = im_depth
+    else:
+        img_for_shape = im
+
+    height = int(img_for_shape.shape[0] * im_scale)
+    width = int(img_for_shape.shape[1] * im_scale)
+    print(height)
+    print(width)
     label_blob = np.ones((1, height, width), dtype=np.int32)
 
     pose_blob = np.zeros((1, 13), dtype=np.float32)

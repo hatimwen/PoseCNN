@@ -384,7 +384,7 @@ __global__ void compute_max_indexes_kernel(const int nthreads, int* max_indexes,
 
 
 __global__ void compute_rois_kernel(const int nthreads, float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain,
-    const float* extents, const float* meta_data, const float* gt, float* hough_space, float* hough_data, int* max_indexes, int* class_indexes,
+    const float* extents, const float* meta_data, const float* gt, const float* cls_loss, float* hough_space, float* hough_data, int* max_indexes, int* class_indexes,
     int is_train, int batch_index, const int height, const int width, const int num_classes, const int num_gt, int* num_rois)
 {
   CUDA_1D_KERNEL_LOOP(index, nthreads)
@@ -446,7 +446,7 @@ __global__ void compute_rois_kernel(const int nthreads, float* top_box, float* t
           int gt_ind = i;
 
           float overlap = compute_box_overlap(cls, extents, meta_data, gt + gt_ind * 13, top_box + roi_index * 7 + 2);
-          if (overlap > 0.85)
+          if (overlap > 0.5)
           {
             for (int j = 0; j < 9; j++)
             {
@@ -756,6 +756,7 @@ void HoughVotingLaucher(OpKernelContext* context,
     {
       float *hmax = thrust::max_element(thrust::device, hough_space + i * height * width, hough_space + (i+1) * height * width);
       max_indexes_host[i] = hmax - hough_space;
+      std::cout << max_indexes_host[i] << std::endl;
     }
     cudaMemcpy(num_max, &count, sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(max_indexes, max_indexes_host, count * sizeof(int), cudaMemcpyHostToDevice);
@@ -775,12 +776,11 @@ void HoughVotingLaucher(OpKernelContext* context,
     num_max_host = index_size;
   if (num_max_host > 0)
   {
-    printf("Cls loss: %f\n", *cls_loss);
     output_size = num_max_host;
     compute_rois_kernel<<<(output_size + kThreadsPerBlock - 1) / kThreadsPerBlock,
                          kThreadsPerBlock, 0, d.stream()>>>(
         output_size, top_box, top_pose, top_target, top_weight, top_domain,
-        extents, meta_data, gt, hough_space, hough_data, max_indexes, class_indexes,
+        extents, meta_data, gt, cls_loss, hough_space, hough_data, max_indexes, class_indexes,
         is_train, batch_index, height, width, num_classes, num_gt, num_rois);
     cudaThreadSynchronize();
   }

@@ -4,3 +4,70 @@ lr: 4e-5, vw: 3, pw: 1
 lr: 7e-5, vw: 3, pw: 1
 140:
 lr: 1e-4, vw: 3, pw: 1
+
+
+
+Run 0:
+lr: 0.0001
+vertex_wheight: 5
+pose_wheight: 3
+Run 1:
+lr: 0.0001
+vertex_wheight: 7
+pose_wheight: 3
+Run 2:
+lr: 0.0001
+vertex_wheight: 5
+pose_wheight: 4
+Run 3:
+lr: 0.0001
+vertex_wheight: 7
+pose_wheight: 4
+Run 4:
+lr: 0.00013
+vertex_wheight: 5
+pose_wheight: 3
+Run 5:
+lr: 0.00013
+vertex_wheight: 7
+pose_wheight: 3
+Run 6:
+lr: 0.00013
+vertex_wheight: 5
+pose_wheight: 4
+Run 7:
+lr: 0.00013
+vertex_wheight: 7
+pose_wheight: 4
+Run 8:
+lr: 0.00016
+vertex_wheight: 5
+pose_wheight: 3
+Run 9:
+lr: 0.00016
+vertex_wheight: 7
+pose_wheight: 3
+Run 10:
+lr: 0.00016
+vertex_wheight: 5
+pose_wheight: 4
+Run 11:
+lr: 0.00016
+vertex_wheight: 7
+pose_wheight: 4
+Run 12:
+lr: 0.00019
+vertex_wheight: 5
+pose_wheight: 3
+Run 13:
+lr: 0.00019
+vertex_wheight: 7
+pose_wheight: 3
+Run 14:
+lr: 0.00019
+vertex_wheight: 5
+pose_wheight: 4
+Run 15:
+lr: 0.00019
+vertex_wheight: 7
+pose_wheight: 4

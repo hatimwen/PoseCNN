@@ -834,9 +834,10 @@ def vis_segmentations_vertmaps_detection(im, im_depth, im_labels, colors, center
     ax.set_title('input image')
 
     # show depth
-    ax = fig.add_subplot(3, 3, 2)
-    plt.imshow(im_depth)
-    ax.set_title('input depth')
+    if im_depth is not None:
+        ax = fig.add_subplot(3, 3, 2)
+        plt.imshow(im_depth)
+        ax.set_title('input depth')
 
     # show class label
     ax = fig.add_subplot(3, 3, 3)
@@ -936,8 +937,8 @@ def vis_segmentations_vertmaps_detection(im, im_depth, im_labels, colors, center
             ax.set_xlim([0, im.shape[1]])
             ax.set_ylim([im.shape[0], 0])
 
-    # plt.show()
-    plt.draw()
+    plt.show()
+    # plt.draw()
     plt.pause(1)
     cmd = raw_input("Press Enter to continue, Type exit to exit\n")
     plt.close(fig)

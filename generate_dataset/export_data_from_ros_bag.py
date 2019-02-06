@@ -50,6 +50,17 @@ def fill_transformer(bag):
     return tf_t
 
 
+def read_dataset_times(name, prefix=""):
+    with open(prefix + "data/" + name + "/times.txt") as times_f:
+        times = []
+        # plus 2 for start and stop time
+        for line in times_f:
+            times.append(line.split("."))
+    start_time = rospy.Time(int(times[-2][0]), int(times[-2][1]))
+    end_time = rospy.Time(int(times[-1][0]), int(times[-1][1]))
+    return start_time, end_time, times
+
+
 def get_datasets():
     datasets = []
     with open("config.yaml", "r") as config:
@@ -66,13 +77,7 @@ def get_datasets():
                 data_dict = list(yaml_data)[0]
                 boxes_sizes = data_dict["boxes"]
                 num_boxes = len(boxes_sizes)
-                with open("data/" + dataset + "/times.txt") as times_f:
-                    times = []
-                    # plus 2 for start and stop time
-                    for i in range(num_boxes + 2):
-                        times.append(times_f.readline().split("."))
-                start_time = rospy.Time(int(times[-2][0]), int(times[-2][1]))
-                end_time = rospy.Time(int(times[-1][0]), int(times[-1][1]))
+                start_time, end_time, times = read_dataset_times(dataset)
                 datasets.append(Dataset(dataset, boxes_sizes, num_boxes, times, start_time, end_time))
     return datasets
 

@@ -349,7 +349,6 @@ class HoughvotinggpuOp<Eigen::GpuDevice, T> : public OpKernel {
     const Tensor& bottom_cls_loss = context->input(5);
     const float* cls_loss = bottom_cls_loss.flat<float>().data();
 
-    std::cout << *cls_loss << std::endl;
 
     int batch_size = bottom_label.dim_size(0);
     int height = bottom_label.dim_size(1);

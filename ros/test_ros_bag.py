@@ -23,6 +23,7 @@ import rosbag
 from cv_bridge import CvBridge, CvBridgeError
 from test import test_ros
 import faulthandler
+from generate_dataset.export_data_from_ros_bag import read_dataset_times
 
 def parse_args():
     """
@@ -72,9 +73,7 @@ def parse_args():
     parser.add_argument('--depth_topic', dest='depth_topic',
                         help='name of the depth topic',
                         default="/camera/aligned_depth_to_color/image_raw", type=str)
-    parser.add_argument('--start_time', dest='start_time',
-                        help='start_time of the rosbag',
-                        default="1547720713.673580", type=str)
+                        # default="/camera/depth/image_rect_raw", type=str)
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -138,10 +137,10 @@ if __name__ == '__main__':
     cv_bridge = CvBridge()
 
     count = 1
-    # print(args.start_time.split(".")[0])
-    # print(args.start_time.split(".")[1])
-    start_time = rospy.Time(int(args.start_time.split(".")[0]), int(args.start_time.split(".")[1]))
-    for topic, msg, t in bag.read_messages(topics=[args.color_topic, args.depth_topic], start_time=start_time):
+    dataset_name = os.path.split(args.bag_name)[1][:-4]
+
+    start_time, end_time, times = read_dataset_times(dataset_name, "generate_dataset/")
+    for topic, msg, t in bag.read_messages(topics=[args.color_topic, args.depth_topic], start_time=start_time, end_time=end_time):
         print count, topic, type(msg)
         if topic == args.color_topic:
             rgb = msg
