@@ -51,9 +51,9 @@ TEST:
 '''
 
     # min, max, stepsize
-    lr_intverals = [0.00001, 0.0001 + 0.00001, 0.00003]
-    pose_wheight_intverals = [1, 3, 1]
-    vertex_wheight_intverals = [3, 7, 2]
+    lr_intverals = [0.0001, 0.0002 + 0.00001, 0.00003]
+    pose_wheight_intverals = [3, 5, 1]
+    vertex_wheight_intverals = [5, 9, 2]
     counter = 0
     for lr in arange(*lr_intverals):
         for pose_wheight in arange(*pose_wheight_intverals):

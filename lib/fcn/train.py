@@ -261,7 +261,7 @@ class SolverWrapper(object):
 
         last_snapshot_iter = -1
         timer = Timer()
-        epochs = 3
+        epochs = 10
         for epoch in range(epochs):
             coord_train.run = True
             coord_val.run = True
@@ -659,7 +659,7 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
                 labels = network.get_output('gt_label_weight')
 
                 # labels_val = network.get_output2('gt_label_weight')
-                loss_cls = loss_cross_entropy_single_frame(scores, labels)
+                loss_cls = network.get_output('loss_cls')
                 # loss_cls_val = loss_cross_entropy_single_frame(scores_val, labels_val)
 
                 vertex_pred = network.get_output('vertex_pred')
