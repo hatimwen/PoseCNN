@@ -24,14 +24,14 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 def get_minibatch(roidb, extents, points, symmetry, num_classes, backgrounds, intrinsic_matrix, \
-    data_queue, db_inds_syn, is_syn, db_inds_adapt, is_adapt, is_symmetric, class_colors=None, sess=None):
+    data_queue, db_inds_syn, is_syn, db_inds_adapt, is_adapt, is_symmetric, class_colors=None):
     """Given a roidb, construct a minibatch sampled from it."""
 
     # Get the input image blob, formatted for tensorflow
     random_scale_ind = npr.randint(0, high=len(cfg.TRAIN.SCALES_BASE))
     im_blob, im_depth_blob, im_normal_blob, im_scales, data_out, height, width = _get_image_blob(roidb, random_scale_ind, num_classes, backgrounds,
                                                                                                  intrinsic_matrix, data_queue, db_inds_syn, is_syn,
-                                                                                                 db_inds_adapt, is_adapt, sess)
+                                                                                                 db_inds_adapt, is_adapt)
 
     # build the label blob
     depth_blob, label_blob, meta_data_blob, vertex_target_blob, vertex_weight_blob, pose_blob, gt_boxes \
@@ -83,7 +83,7 @@ def get_minibatch(roidb, extents, points, symmetry, num_classes, backgrounds, in
 
     return blobs
 
-def _get_image_blob(roidb, scale_ind, num_classes, backgrounds, intrinsic_matrix, data_queue, db_inds_syn, is_syn, db_inds_adapt, is_adapt, sess):
+def _get_image_blob(roidb, scale_ind, num_classes, backgrounds, intrinsic_matrix, data_queue, db_inds_syn, is_syn, db_inds_adapt, is_adapt):
     """Builds an input blob from the images in the roidb at the specified
     scales.
     """
@@ -180,6 +180,7 @@ def _get_image_blob(roidb, scale_ind, num_classes, backgrounds, intrinsic_matrix
         random_contrast = False
 
         if random_hue:
+            sess = tf.Session()
             with sess.as_default():
                 im = tf.image.random_hue(im, 0.5).eval()
         if random_brightness:

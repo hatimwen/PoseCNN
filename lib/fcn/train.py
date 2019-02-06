@@ -477,7 +477,7 @@ def load_and_enqueue_val(sess, net, data_layer, coord, iters=0):
     iter = 0
     while coord.run and iter < iters:
         data_layer._validation = True
-        blobs = data_layer.forward(iter, sess)
+        blobs = data_layer.forward(iter)
         # blobs = data_layer.forward()
         iter += 1
 

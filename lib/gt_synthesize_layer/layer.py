@@ -97,7 +97,7 @@ class GtSynthesizeLayer(object):
 
         return db_inds, db_inds_syn, db_inds_adapt
 
-    def _get_next_minibatch(self, iter, sess=None):
+    def _get_next_minibatch(self, iter):
         """Return the blobs to be used for the next minibatch."""
 
         if cfg.TRAIN.SYNTHESIZE:
@@ -135,11 +135,11 @@ class GtSynthesizeLayer(object):
         else:
             backgrounds = self._backgrounds
         return get_minibatch(minibatch_db, self._extents, self._points, self._symmetry, self._num_classes, backgrounds, self._intrinsic_matrix, self._data_queue, db_inds_syn,
-                             is_syn, db_inds_adapt, is_adapt, is_symmetric, self._class_colors, sess)
+                             is_syn, db_inds_adapt, is_adapt, is_symmetric, self._class_colors)
             
-    def forward(self, iter, sess=None):
+    def forward(self, iter):
         """Get blobs and copy them into this layer's top blob vector."""
-        blobs = self._get_next_minibatch(iter, sess)
+        blobs = self._get_next_minibatch(iter)
 
         return blobs
 
