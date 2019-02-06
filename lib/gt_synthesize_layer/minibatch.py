@@ -197,7 +197,8 @@ def _get_image_blob(roidb, scale_ind, num_classes, backgrounds, intrinsic_matrix
         im_scale = cfg.TRAIN.SCALES_BASE[scale_ind]
         im = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_LINEAR)
         im_scales.append(im_scale)
-        plt.plot(im)
+        plt.imshow(im)
+        plt.show()
         processed_ims.append(im)
 
         # depth
@@ -442,6 +443,7 @@ def _get_label_blob(roidb, intrinsic_matrix, data_out, num_classes, db_inds_syn,
                 if len(np.unique(cls_indexes)) < len(cls_indexes):
                     is_multi_instances = 1
                     # read mask image
+                    print(roidb[i])
                     mask = pad_im(cv2.imread(roidb[i]['mask'], cv2.IMREAD_UNCHANGED), 16)
                 else:
                     is_multi_instances = 0
