@@ -576,7 +576,7 @@ __global__ void compute_rois_kernel(const int nthreads, float* top_box, float* t
 }
 
 
-void reset_outputs(float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain, int* num_rois, int num_classes)
+void reset_outputs(float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain, int* num_rois, int num_classes, float* hough_space)
 {
   int num = MAX_ROI * 9;
   cudaMemset(top_box, 0, num * 7 * sizeof(float));
@@ -585,6 +585,8 @@ void reset_outputs(float* top_box, float* top_pose, float* top_target, float* to
   cudaMemset(top_weight, 0, num * 4 * num_classes * sizeof(float));
   cudaMemset(top_domain, 0, num * sizeof(int));
   cudaMemset(num_rois, 0, sizeof(int));
+  if (cudaMemset(hough_space, 0, 480 * 640 * sizeof(float)) != cudaSuccess)
+    fprintf(stderr, "reset error\n");
 }
 
 
@@ -594,14 +596,15 @@ void copy_num_rois(int* num_rois, int* num_rois_device)
 }
 
 
-void copy_outputs(float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain,
-  float* top_box_final, float* top_pose_final, float* top_target_final, float* top_weight_final, int* top_domain_final, int num_classes, int num_rois)
+void copy_outputs(float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain, float* hough_space,
+  float* top_box_final, float* top_pose_final, float* top_target_final, float* top_weight_final, int* top_domain_final, float* top_hough_space_final, int num_classes, int num_rois)
 {
   cudaMemcpy(top_box_final, top_box, num_rois * 7 * sizeof(float), cudaMemcpyDeviceToDevice);
   cudaMemcpy(top_pose_final, top_pose, num_rois * 7 * sizeof(float), cudaMemcpyDeviceToDevice);
   cudaMemcpy(top_target_final, top_target, num_rois * 4 * num_classes * sizeof(float), cudaMemcpyDeviceToDevice);
   cudaMemcpy(top_weight_final, top_weight, num_rois * 4 * num_classes * sizeof(float), cudaMemcpyDeviceToDevice);
   cudaMemcpy(top_domain_final, top_domain, num_rois * sizeof(int), cudaMemcpyDeviceToDevice);
+  cudaMemcpy(top_hough_space_final, hough_space, 480 * 640 * sizeof(float), cudaMemcpyDeviceToDevice);
 }
 
 
@@ -617,7 +620,7 @@ void HoughVotingLaucher(OpKernelContext* context,
     const int batch_index, const int batch_size, const int height, const int width, const int num_classes, const int num_gt, 
     const int is_train, const float inlierThreshold, const int labelThreshold, const float votingThreshold, const float perThreshold, 
     const int skip_pixels, 
-    float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain, int* num_rois, const Eigen::GpuDevice& d)
+    float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain, int* num_rois, const Eigen::GpuDevice& d, float* hough_space)
 {
   const int kThreadsPerBlock = 1024;
 // Fixes too many resources requested error
@@ -690,13 +693,13 @@ void HoughVotingLaucher(OpKernelContext* context,
   hdims[1] = height;
   hdims[2] = width;
   hdims[3] = 1;
-  TensorShape output_shape_hough_space;
-  TensorShapeUtils::MakeShape(hdims, 4, &output_shape_hough_space);
-  Tensor hough_space_tensor;
-  OP_REQUIRES_OK(context, context->allocate_temp(DT_FLOAT, output_shape_hough_space, &hough_space_tensor));
-  float* hough_space = hough_space_tensor.flat<float>().data(); 
-  if (cudaMemset(hough_space, 0, count * height * width * sizeof(float)) != cudaSuccess)
-    fprintf(stderr, "reset error\n");
+//  TensorShape output_shape_hough_space;
+//  TensorShapeUtils::MakeShape(hdims, 4, &output_shape_hough_space);
+//  Tensor hough_space_tensor;
+//  OP_REQUIRES_OK(context, context->allocate_temp(DT_FLOAT, output_shape_hough_space, &hough_space_tensor));
+//  float* hough_space = hough_space_tensor.flat<float>().data();
+//  if (cudaMemset(hough_space, 0, count * height * width * sizeof(float)) != cudaSuccess)
+//    fprintf(stderr, "reset error\n");
 
   hdims[3] = 3;
   TensorShape output_shape_hough_data;

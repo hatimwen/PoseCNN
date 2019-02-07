@@ -153,7 +153,7 @@ if __name__ == '__main__':
         try:
             test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count/2 - 1)
         except NameError:
-            pass
+            test_ros(sess, network, imdb, meta_data, cfg, rgb, None, cv_bridge, count/2 - 1)
 
         count += 1
 
