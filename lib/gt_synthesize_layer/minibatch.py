@@ -185,8 +185,8 @@ def _get_image_blob(roidb, scale_ind, num_classes, backgrounds, intrinsic_matrix
         im_scale = cfg.TRAIN.SCALES_BASE[scale_ind]
         im = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_LINEAR)
         im_scales.append(im_scale)
-        plt.imshow(im)
-        plt.show()
+        #plt.imshow(im)
+        #plt.show()
         processed_ims.append(im)
 
         # depth
