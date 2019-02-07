@@ -48,3 +48,4 @@ runs.txt
 .cproject
 .project
 PoseCNN.cu
+nohup.out
