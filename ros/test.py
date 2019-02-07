@@ -9,6 +9,7 @@ from normals import gpu_normals
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from transforms3d.quaternions import quat2mat
+import matplotlib.pyplot as plt
 
 
 def test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count):
@@ -203,9 +204,9 @@ def im_segment_single_frame(sess, net, im, im_depth, meta_data, extents, points,
 
     if cfg.TEST.VERTEX_REG_2D:
         if cfg.TEST.POSE_REG:
-            labels_2d, probs, vertex_pred, rois, poses_init, poses_pred = \
+            labels_2d, probs, vertex_pred, rois, poses_init, poses_pred, hough_space = \
                 sess.run([net.get_output('label_2d'), net.get_output('prob_normalized'), net.get_output('vertex_pred'), \
-                          net.get_output('rois'), net.get_output('poses_init'), net.get_output('poses_tanh')])
+                          net.get_output('rois'), net.get_output('poses_init'), net.get_output('poses_tanh'), net.get_output('hough_space')])
 
             # non-maximum suppression
             # keep = nms(rois, 0.5)
@@ -213,6 +214,9 @@ def im_segment_single_frame(sess, net, im, im_depth, meta_data, extents, points,
             # poses_init = poses_init[keep, :]
             # poses_pred = poses_pred[keep, :]
             print rois
+            print(hough_space.shape)
+            plt.imshow(hough_space[0, :, :, 0])
+            plt.show()
 
             # combine poses
             num = rois.shape[0]
@@ -249,7 +253,6 @@ def im_segment_single_frame(sess, net, im, im_depth, meta_data, extents, points,
 def vis_segmentations_vertmaps(im, im_depth, im_labels, colors, center_map, 
   labels, rois, poses, poses_new, intrinsic_matrix, num_classes, points, cfg):
     """Visual debugging of detections."""
-    import matplotlib.pyplot as plt
     fig = plt.figure()
 
     # show image
