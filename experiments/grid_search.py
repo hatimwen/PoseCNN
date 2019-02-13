@@ -51,15 +51,16 @@ TEST:
 '''
 
     # min, max, stepsize
-    lr_intverals = [0.00015, 0.00018 + 0.00001, 0.00001]
-    pose_wheight_intverals = [3, 4, 1]
-    vertex_wheight_intverals = [7, 9, 2]
+    lr_intverals = [0.000159, 0.000161 + 0.00001, 0.000001]
+    pose_wheight_intverals = [1, 5, 2]
+    vertex_wheight_intverals = [3, 7, 2]
     counter = 0
     for lr in arange(*lr_intverals):
         for pose_wheight in arange(*pose_wheight_intverals):
             for vertex_wheight in arange(*vertex_wheight_intverals):
                 config_out = open("experiments/cfgs/lov_color_box.yml", "w")
-                lr_str = "{:.5f}".format(lr) if lr < 0.0001 else "{:.4f}".format(lr)
+                #lr_str = "{:.5f}".format(lr) if lr < 0.0001 else "{:.4f}".format(lr)
+                lr_str = "{:.6f}".format(lr)
                 config_formatted = config.format(lr_str, float(vertex_wheight), float(pose_wheight))
                 print("Run {}:\nlr: {}\nvertex_wheight: {}\npose_wheight: {}".format(counter, lr, vertex_wheight, pose_wheight))
                 config_out.write(config_formatted)

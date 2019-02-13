@@ -711,7 +711,7 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
     # optimizer
     global_step = tf.Variable(0, trainable=False)
     starter_learning_rate = cfg.TRAIN.LEARNING_RATE
-    learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step, cfg.TRAIN.STEPSIZE, 0.5, staircase=False)
+    learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step, cfg.TRAIN.STEPSIZE, 0.5, staircase=True)
     momentum = cfg.TRAIN.MOMENTUM
     #learning_rate = clr.cyclic_learning_rate(global_step=global_step, learning_rate=starter_learning_rate, max_lr=starter_learning_rate*10, step_size=2, 
     #                                        mode='triangular2', gamma=0.99994)
