@@ -43,7 +43,8 @@ __global__ void AveragedistanceForward(const int nthreads, const Dtype* predicti
     int p = index_thread % num_points;
 
     // find the class label and pose of this object
-    int index_cls = -1, ind;
+    int index_cls = -1;
+    int ind;
     Dtype s, u, v, w;
     for (int i = 0; i < POSE_CHANNELS * num_classes; i += POSE_CHANNELS)
     {

@@ -24,6 +24,7 @@ from cv_bridge import CvBridge, CvBridgeError
 from test import test_ros
 import faulthandler
 from generate_dataset.export_data_from_ros_bag import read_dataset_times
+import matplotlib.pyplot as plt
 
 def parse_args():
     """
@@ -93,6 +94,12 @@ if __name__ == '__main__':
     if args.cfg_file is not None:
         cfg_from_file(args.cfg_file)
 
+    randomize = True
+    if not randomize:
+        # fix the random seeds (numpy and caffe) for reproducibility
+        tf.set_random_seed(cfg.RNG_SEED)
+        np.random.seed(cfg.RNG_SEED)
+
     print('Using config:')
     pprint.pprint(cfg)
 
@@ -136,24 +143,33 @@ if __name__ == '__main__':
     bag = rosbag.Bag(args.bag_name)
     cv_bridge = CvBridge()
 
-    count = 1
+    count = 0
+    count_inner = 0
     dataset_name = os.path.split(args.bag_name)[1][:-4]
+    # plt.ion()
+    fig = plt.figure()
+    plt.close()
+    topics = bag.get_type_and_topic_info().topics
+
+    rgb = None
+    depth = None
 
     start_time, end_time, times = read_dataset_times(dataset_name, "generate_dataset/")
     for topic, msg, t in bag.read_messages(topics=[args.color_topic, args.depth_topic], start_time=start_time, end_time=end_time):
         print count, topic, type(msg)
         if topic == args.color_topic:
             rgb = msg
-        if topic == args.depth_topic:
-            depth = msg
+        if args.depth_topic in topics:
+            if topic == args.depth_topic:
+                depth = msg
 
-        # if count > 2:
-        #     break
-        # if count % 2 == 0:
-        try:
-            test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count/2 - 1)
-        except NameError:
-            test_ros(sess, network, imdb, meta_data, cfg, rgb, None, cv_bridge, count/2 - 1)
+        if count % 30 == 0 or (count - 1) % 30 == 0:
+            count_inner += 1
+            if count_inner % 2 == 0:
+                try:
+                    test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count/2 - 1, fig)
+                except NameError:
+                    test_ros(sess, network, imdb, meta_data, cfg, rgb, None, cv_bridge, count/2 - 1, fig)
 
         count += 1
 

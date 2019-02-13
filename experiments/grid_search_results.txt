@@ -19,7 +19,7 @@ Run 2:
 lr: 0.0001
 vertex_wheight: 5
 pose_wheight: 4
-Run 3:
+    Run 3:
 lr: 0.0001
 vertex_wheight: 7
 pose_wheight: 4
@@ -43,7 +43,7 @@ Run 8:
 lr: 0.00016
 vertex_wheight: 5
 pose_wheight: 3
-Run 9:
+    Run 9:
 lr: 0.00016
 vertex_wheight: 7
 pose_wheight: 3

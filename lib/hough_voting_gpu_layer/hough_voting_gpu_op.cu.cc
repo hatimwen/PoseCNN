@@ -333,7 +333,7 @@ __global__ void compute_hough_kernel(const int nthreads, float* hough_space, flo
 }
 
 __global__ void compute_max_indexes_kernel(const int nthreads, int* max_indexes, int index_size, int* num_max, float* hough_space, 
-  float* hough_data, int height, int width, float threshold, float perThreshold)
+  float* hough_data, const int kernel_size, int height, int width, float threshold, float perThreshold)
 {
   CUDA_1D_KERNEL_LOOP(index, nthreads) 
   {
@@ -342,7 +342,6 @@ __global__ void compute_max_indexes_kernel(const int nthreads, int* max_indexes,
     int n = index % (height * width);
     int cx = n % width;
     int cy = n / width;
-    int kernel_size = 3;
 
     int offset = ind * height * width * 3 + 3 * (cy * width + cx);
     float bb_height = hough_data[offset + 1];
@@ -613,7 +612,7 @@ void set_gradients(float* top_label, float* top_vertex, int batch_size, int heig
 
 
 void HoughVotingLaucher(OpKernelContext* context,
-    const int* labelmap, const float* vertmap, const float* extents, const float* meta_data, const float* gt, const float* cls_loss,
+    const int* labelmap, const float* vertmap, const float* extents, const float* meta_data, const float* gt, const float* cls_loss, const int kernel_size,
     const int batch_index, const int batch_size, const int height, const int width, const int num_classes, const int num_gt, 
     const int is_train, const float inlierThreshold, const int labelThreshold, const float votingThreshold, const float perThreshold, 
     const int skip_pixels, 
@@ -745,7 +744,7 @@ void HoughVotingLaucher(OpKernelContext* context,
     output_size = count * height * width;
     compute_max_indexes_kernel<<<(output_size + kThreadsPerBlock - 1) / kThreadsPerBlock,
                        kThreadsPerBlock, 0, d.stream()>>>(
-      output_size, max_indexes, index_size, num_max, hough_space, hough_data, height, width, votingThreshold, perThreshold);
+      output_size, max_indexes, index_size, num_max, hough_space, hough_data, kernel_size, height, width, votingThreshold, perThreshold);
     cudaThreadSynchronize();
   }
   else

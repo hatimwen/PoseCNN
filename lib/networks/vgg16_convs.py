@@ -2,7 +2,8 @@ import tensorflow as tf
 from networks.network import Network
 
 class vgg16_convs(Network):
-    def __init__(self, input_format, num_classes, num_units, scales, threshold_label, vote_threshold, vertex_reg_2d=False, vertex_reg_3d=False, pose_reg=False, adaptation=False, trainable=True, is_train=True):
+    def __init__(self, input_format, num_classes, num_units, scales, threshold_label, vote_threshold, vertex_reg_2d=False, vertex_reg_3d=False, pose_reg=False, adaptation=False,
+                 trainable=True, is_train=True, kernel_size=3):
         self.inputs = []
         self.input_format = input_format
         self.num_classes = num_classes
@@ -27,6 +28,7 @@ class vgg16_convs(Network):
             self.skip_pixels = 10
             self.vote_threshold = vote_threshold
             self.vote_percentage = 0.02
+        self.kernel_size = kernel_size
 
         self.data = tf.placeholder(tf.float32, shape=[None, None, None, 3])
         if input_format == 'RGBD':
@@ -170,7 +172,7 @@ class vgg16_convs(Network):
                     labels = self.get_output('gt_label_weight')
                     self.layers['loss_cls'] = loss_cross_entropy_single_frame(scores, labels)
                     (self.feed('label_2d', 'vertex_pred', 'extents', 'meta_data', 'poses', 'loss_cls')
-                         .hough_voting_gpu(self.is_train, self.vote_threshold, self.vote_percentage, self.skip_pixels, name='hough'))
+                         .hough_voting_gpu(self.is_train, self.kernel_size, self.vote_threshold, self.vote_percentage, self.skip_pixels, name='hough'))
 
                     self.layers['rois'] = self.get_output('hough')[0]
                     self.layers['poses_init'] = self.get_output('hough')[1]

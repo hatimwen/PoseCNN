@@ -10,9 +10,10 @@ from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from transforms3d.quaternions import quat2mat
 import matplotlib.pyplot as plt
+import timeit
 
 
-def test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count):
+def test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count, fig):
     if depth is not None:
         if depth.encoding == '32FC1':
             depth_32 = cv_bridge.imgmsg_to_cv2(depth) * 1000
@@ -38,8 +39,12 @@ def test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count):
         print filename
 
     # run network
+    start_time = timeit.default_timer()
     labels, probs, vertex_pred, rois, poses = im_segment_single_frame(sess, network, im, depth_cv, meta_data, \
             imdb._extents, imdb._points_all, imdb._symmetry, imdb.num_classes, cfg)
+    elapsed = timeit.default_timer() - start_time
+    print("ELAPSED TIME:")
+    print(elapsed)
     poses_icp = []
 
     im_label = imdb.labels_to_image(im, labels)
@@ -51,7 +56,7 @@ def test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count):
         #             imdb.num_classes, imdb._points_all, cfg)
         vis_segmentations_vertmaps_detection(im, depth_cv, im_label, imdb._class_colors, \
                                    vertmap, labels, rois, poses, poses_icp, meta_data['intrinsic_matrix'], \
-                                   imdb.num_classes, imdb._classes, imdb._points_all)
+                                   imdb.num_classes, imdb._classes, imdb._points_all, fig)
 
 
 def extract_vertmap(im_label, vertex_pred, extents, num_classes):
@@ -138,6 +143,42 @@ def get_image_blob(im, im_depth, meta_data, cfg):
     return blob, blob_depth, blob_normal, np.array(im_scale_factors)
 
 
+def get_data(sess, net):
+    labels_2d, probs, vertex_pred, rois, poses_init, poses_pred, poses_tanh, poses_weight = \
+        sess.run([net.get_output('label_2d'), net.get_output('prob_normalized'), net.get_output('vertex_pred'), \
+                  net.get_output('rois'), net.get_output('poses_init'), net.get_output('poses_pred'), net.get_output('poses_tanh'), net.get_output("poses_weight")])
+    # non-maximum suppression
+    # keep = nms(rois, 0.5)
+    # rois = rois[keep, :]
+    # poses_init = poses_init[keep, :]
+    # poses_pred = poses_pred[keep, :]
+    print rois
+    print("POSES PRED")
+    print(poses_pred)
+    print("POSES WEIGTH")
+    print(poses_weight)
+    print("POSES TANH")
+    print(poses_tanh.shape)
+    print(poses_tanh)
+    poses_pred = poses_tanh
+
+    # combine poses
+    num = rois.shape[0]
+    poses = poses_init
+    for i in xrange(num):
+        class_id = int(rois[i, 1])
+        if class_id >= 0:
+            poses[i, :4] = poses_pred[i, 4 * class_id:4 * class_id + 4]
+    vertex_pred = vertex_pred[0, :, :, :]
+    return labels_2d[0,:,:].astype(np.int32), probs[0,:,:,:], vertex_pred, rois, poses
+
+
+def get_plt_buffer(sess, net):
+    labels, probs, vertex_pred, rois, poses = get_data(sess, net)
+    from fcn.test import plot_data
+    plot_data(labels, probs, vertex_pred, rois, poses)
+
+
 def im_segment_single_frame(sess, net, im, im_depth, meta_data, extents, points, symmetry, num_classes, cfg):
     """segment image
     """
@@ -204,27 +245,7 @@ def im_segment_single_frame(sess, net, im, im_depth, meta_data, extents, points,
 
     if cfg.TEST.VERTEX_REG_2D:
         if cfg.TEST.POSE_REG:
-            labels_2d, probs, vertex_pred, rois, poses_init, poses_pred, hough_space = \
-                sess.run([net.get_output('label_2d'), net.get_output('prob_normalized'), net.get_output('vertex_pred'), \
-                          net.get_output('rois'), net.get_output('poses_init'), net.get_output('poses_tanh'), net.get_output('hough_space')])
-
-            # non-maximum suppression
-            # keep = nms(rois, 0.5)
-            # rois = rois[keep, :]
-            # poses_init = poses_init[keep, :]
-            # poses_pred = poses_pred[keep, :]
-            print rois
-            print(hough_space.shape)
-            plt.imshow(hough_space[0, :, :, 0])
-            plt.show()
-
-            # combine poses
-            num = rois.shape[0]
-            poses = poses_init
-            for i in xrange(num):
-                class_id = int(rois[i, 1])
-                if class_id >= 0:
-                    poses[i, :4] = poses_pred[i, 4*class_id:4*class_id+4]
+            return get_data(sess, net)
         else:
             labels_2d, probs, vertex_pred, rois, poses = \
                 sess.run([net.get_output('label_2d'), net.get_output('prob_normalized'), net.get_output('vertex_pred'), net.get_output('rois'), net.get_output('poses_init')])
@@ -239,7 +260,7 @@ def im_segment_single_frame(sess, net, im, im_depth, meta_data, extents, points,
             #vertex_pred = []
             #rois = []
             #poses = []
-        vertex_pred = vertex_pred[0, :, :, :]
+            vertex_pred = vertex_pred[0, :, :, :]
     else:
         labels_2d, probs = sess.run([net.get_output('label_2d'), net.get_output('prob_normalized')])
         vertex_pred = []

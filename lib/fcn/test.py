@@ -34,6 +34,7 @@ from normals import gpu_normals
 # from kinect_fusion import kfusion
 # from pose_refinement import refiner
 # from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
 
 def _get_image_blob(im, im_depth, meta_data):
     """Converts an image into a network input.
@@ -646,8 +647,8 @@ def _unscale_vertmap(vertmap, labels, extents, num_classes):
     return vertmap
 
 
-def vis_segmentations_vertmaps(im, im_depth, im_labels, im_labels_gt, colors, center_map_gt, center_map, 
-  labels, labels_gt, rois, poses, poses_new, intrinsic_matrix, vertmap_gt, poses_gt, cls_indexes, num_classes, points):
+def vis_segmentations_vertmaps(im, im_depth, im_labels, im_labels_gt, colors, center_map_gt, center_map, labels, labels_gt, rois, poses, poses_new, intrinsic_matrix, vertmap_gt,
+                               poses_gt, cls_indexes, num_classes, points):
     """Visual debugging of detections."""
     import matplotlib.pyplot as plt
     fig = plt.figure()
@@ -820,10 +821,7 @@ def vis_segmentations_vertmaps(im, im_depth, im_labels, im_labels_gt, colors, ce
     plt.show()
 
 
-def vis_segmentations_vertmaps_detection(im, im_depth, im_labels, colors, center_map, 
-  labels, rois, poses, poses_new, intrinsic_matrix, num_classes, classes, points):
-    """Visual debugging of detections."""
-    import matplotlib.pyplot as plt
+def plot_data(im, im_depth, im_labels, colors, center_map, labels, rois, poses, poses_new, intrinsic_matrix, num_classes, classes, points):
     fig = plt.figure()
 
     # show image
@@ -842,7 +840,7 @@ def vis_segmentations_vertmaps_detection(im, im_depth, im_labels, colors, center
     # show class label
     ax = fig.add_subplot(3, 3, 3)
     plt.imshow(im_labels)
-    ax.set_title('class labels')      
+    ax.set_title('class labels')
 
     if cfg.TEST.VERTEX_REG_2D:
         # show centers
@@ -858,20 +856,20 @@ def vis_segmentations_vertmaps_detection(im, im_depth, im_labels, colors, center
 
                 # show boxes
                 plt.gca().add_patch(
-                    plt.Rectangle((cx-w/2, cy-h/2), w, h, fill=False,
-                                   edgecolor='g', linewidth=3))
-        
+                    plt.Rectangle((cx - w / 2, cy - h / 2), w, h, fill=False,
+                                  edgecolor='g', linewidth=3))
+
     # show vertex map
     ax = fig.add_subplot(3, 3, 4)
-    plt.imshow(center_map[:,:,0])
+    plt.imshow(center_map[:, :, 0])
     ax.set_title('centers x')
 
     ax = fig.add_subplot(3, 3, 5)
-    plt.imshow(center_map[:,:,1])
+    plt.imshow(center_map[:, :, 1])
     ax.set_title('centers y')
-    
+
     ax = fig.add_subplot(3, 3, 6)
-    plt.imshow(center_map[:,:,2])
+    plt.imshow(center_map[:, :, 2])
     ax.set_title('centers z')
 
     # show projection of the poses
@@ -885,9 +883,9 @@ def vis_segmentations_vertmaps_detection(im, im_depth, im_labels, colors, center
             if cls > 0:
                 # extract 3D points
                 x3d = np.ones((4, points.shape[1]), dtype=np.float32)
-                x3d[0, :] = points[cls,:,0]
-                x3d[1, :] = points[cls,:,1]
-                x3d[2, :] = points[cls,:,2]
+                x3d[0, :] = points[cls, :, 0]
+                x3d[1, :] = points[cls, :, 1]
+                x3d[2, :] = points[cls, :, 2]
 
                 # projection
                 RT = np.zeros((3, 4), dtype=np.float32)
@@ -916,9 +914,9 @@ def vis_segmentations_vertmaps_detection(im, im_depth, im_labels, colors, center
                 if cls > 0:
                     # extract 3D points
                     x3d = np.ones((4, points.shape[1]), dtype=np.float32)
-                    x3d[0, :] = points[cls,:,0]
-                    x3d[1, :] = points[cls,:,1]
-                    x3d[2, :] = points[cls,:,2]
+                    x3d[0, :] = points[cls, :, 0]
+                    x3d[1, :] = points[cls, :, 1]
+                    x3d[2, :] = points[cls, :, 2]
 
                     # projection
                     RT = np.zeros((3, 4), dtype=np.float32)
@@ -937,9 +935,15 @@ def vis_segmentations_vertmaps_detection(im, im_depth, im_labels, colors, center
             ax.set_xlim([0, im.shape[1]])
             ax.set_ylim([im.shape[0], 0])
 
+
+def vis_segmentations_vertmaps_detection(im, im_depth, im_labels, colors, center_map, labels, rois, poses, poses_new, intrinsic_matrix, num_classes, classes, points, fig):
+    """Visual debugging of detections."""
+    plot_data(im, im_depth, im_labels, colors, center_map, labels, rois, poses, poses_new, intrinsic_matrix, num_classes, classes, points)
     plt.show()
     # plt.draw()
-    plt.pause(1)
+    # plt.pause(0.033)
+    # plt.clf()
+    # plt.cla()
     cmd = raw_input("Press Enter to continue, Type exit to exit\n")
     plt.close(fig)
     if cmd == "exit":

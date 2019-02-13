@@ -37,6 +37,7 @@ typedef Eigen::ThreadPoolDevice CPUDevice;
 REGISTER_OP("Houghvotinggpu")
     .Attr("T: {float, double}")
     .Attr("is_train: int")
+    .Attr("kernel_size: int")
     .Attr("threshold_vote: float")
     .Attr("threshold_percentage: float")
     .Attr("skip_pixels: int")
@@ -84,7 +85,7 @@ inline void compute_width_height(const int* labelmap, const float* vertmap, cv::
 
 // cuda functions
 void HoughVotingLaucher(OpKernelContext* context,
-    const int* labelmap, const float* vertmap, const float* extents, const float* meta_data, const float* gt, const float* cls_loss,
+    const int* labelmap, const float* vertmap, const float* extents, const float* meta_data, const float* gt, const float* cls_loss, const int kernel_size,
     const int batch_index, const int batch_size, const int height, const int width, const int num_classes, const int num_gt,
     const int is_train, const float inlierThreshold, const int labelThreshold, const float votingThreshold, const float perThreshold,
     const int skip_pixels,float* top_box, float* top_pose, float* top_target, float* top_weight, 
@@ -141,6 +142,7 @@ class HoughvotinggpuOp : public OpKernel {
     OP_REQUIRES(context, is_train_ >= 0,
                 errors::InvalidArgument("Need is_train >= 0, got ",
                                         is_train_));
+    OP_REQUIRES_OK(context, context->GetAttr("kernel_size", &kernel_size_));
     OP_REQUIRES_OK(context,
                    context->GetAttr("threshold_vote", &threshold_vote_));
     OP_REQUIRES_OK(context,
@@ -289,6 +291,7 @@ class HoughvotinggpuOp : public OpKernel {
   }
  private:
   int is_train_;
+  int kernel_size_;
   float threshold_vote_;
   float threshold_percentage_;
   int skip_pixels_;
@@ -310,6 +313,7 @@ class HoughvotinggpuOp<Eigen::GpuDevice, T> : public OpKernel {
     OP_REQUIRES(context, is_train_ >= 0,
                 errors::InvalidArgument("Need is_train >= 0, got ",
                                         is_train_));
+    OP_REQUIRES_OK(context, context->GetAttr("kernel_size", &kernel_size_));
     OP_REQUIRES_OK(context,
                    context->GetAttr("threshold_vote", &threshold_vote_));
     OP_REQUIRES_OK(context,
@@ -375,7 +379,7 @@ class HoughvotinggpuOp<Eigen::GpuDevice, T> : public OpKernel {
       const int* labelmap = bottom_label.flat<int>().data() + n * height * width;
       const float* vertmap = bottom_vertex.flat<float>().data() + n * height * width * VERTEX_CHANNELS * num_classes;
       const float* meta_data = bottom_meta_data.flat<float>().data() + n * num_meta_data;
-      HoughVotingLaucher(context, labelmap, vertmap, extents, meta_data, gt, cls_loss, n, batch_size, height, width, num_classes, num_gt,
+      HoughVotingLaucher(context, labelmap, vertmap, extents, meta_data, gt, cls_loss, kernel_size_, n, batch_size, height, width, num_classes, num_gt,
         is_train_, inlierThreshold, labelThreshold, threshold_vote_, threshold_percentage_, skip_pixels_,
         top_box, top_pose, top_target, top_weight, top_domain, num_rois_device, context->eigen_device<Eigen::GpuDevice>());
     }
@@ -433,6 +437,7 @@ class HoughvotinggpuOp<Eigen::GpuDevice, T> : public OpKernel {
   }
  private:
   int is_train_;
+  int kernel_size_;
   float threshold_vote_;
   float threshold_percentage_;
   int skip_pixels_;

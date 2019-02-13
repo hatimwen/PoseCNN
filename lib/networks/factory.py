@@ -24,7 +24,7 @@ if cfg.TRAIN.SINGLE_FRAME:
         __sets['vgg16_convs'] = networks.vgg16_convs(cfg.INPUT, cfg.TRAIN.NUM_CLASSES, cfg.TRAIN.NUM_UNITS, cfg.TRAIN.SCALES_BASE, \
                                                      cfg.TRAIN.THRESHOLD_LABEL, cfg.TRAIN.VOTING_THRESHOLD, \
                                                      cfg.TRAIN.VERTEX_REG_2D, cfg.TRAIN.VERTEX_REG_3D, \
-                                                     cfg.TRAIN.POSE_REG, cfg.TRAIN.ADAPT, cfg.TRAIN.TRAINABLE, cfg.IS_TRAIN)
+                                                     cfg.TRAIN.POSE_REG, cfg.TRAIN.ADAPT, cfg.TRAIN.TRAINABLE, cfg.IS_TRAIN, cfg.KERNEL_SIZE)
     if cfg.NETWORK == 'VGG16FULL':
         __sets['vgg16_full'] = networks.vgg16_full(cfg.INPUT, cfg.TRAIN.NUM_CLASSES, cfg.TRAIN.NUM_UNITS, cfg.TRAIN.SCALES_BASE, \
                                                    cfg.TRAIN.THRESHOLD_LABEL, cfg.TRAIN.VOTING_THRESHOLD, \

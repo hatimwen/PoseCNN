@@ -3,7 +3,7 @@ import bpy
 import csv
 from operator import itemgetter
 
-csvfile = open('/home/satco/PycharmProjects/PoseCNN/data/LOV/models/036_wood_block/points.xyz')
+csvfile = open('/home/satco/PycharmProjects/PoseCNN/data/LOV/models/000_box/points.xyz')
 
 inFile = csv.reader(csvfile, delimiter=' ', quotechar='"')
 # skip header
