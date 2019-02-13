@@ -30,6 +30,7 @@ cfg = __C
 
 __C.FLIP_X = False
 __C.INPUT = 'RGBD'
+__C.KERNEL_SIZE = 3
 __C.NETWORK = 'VGG16'
 __C.RIG = ''
 __C.CAD = ''

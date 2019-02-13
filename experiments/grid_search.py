@@ -6,6 +6,7 @@ import os
 def main():
     config = '''EXP_DIR: lov
 INPUT: COLOR
+KERNEL_SIZE: {}
 TRAIN:
   SINGLE_FRAME: True
   TRAINABLE: True
@@ -51,22 +52,24 @@ TEST:
 '''
 
     # min, max, stepsize
-    lr_intverals = [0.000159, 0.000161 + 0.00001, 0.000001]
-    pose_wheight_intverals = [1, 5, 2]
-    vertex_wheight_intverals = [3, 7, 2]
+    lr_intverals = [0.00016, 0.000162 + 0.00001, 0.000002]
+    kernel_size_intverals = [3, 51 + 1, 8]
+    pose_wheight_intverals = [1, 2, 2]
+    vertex_wheight_intverals = [3, 4, 2]
     counter = 0
     for lr in arange(*lr_intverals):
-        for pose_wheight in arange(*pose_wheight_intverals):
-            for vertex_wheight in arange(*vertex_wheight_intverals):
-                config_out = open("experiments/cfgs/lov_color_box.yml", "w")
-                #lr_str = "{:.5f}".format(lr) if lr < 0.0001 else "{:.4f}".format(lr)
-                lr_str = "{:.6f}".format(lr)
-                config_formatted = config.format(lr_str, float(vertex_wheight), float(pose_wheight))
-                print("Run {}:\nlr: {}\nvertex_wheight: {}\npose_wheight: {}".format(counter, lr, vertex_wheight, pose_wheight))
-                config_out.write(config_formatted)
-                config_out.close()
-                counter += 1
-                subprocess.call(['./experiments/scripts/lov_color_box_train.sh 0'], shell=True, env=os.environ)
+        for kernel_size in range(*kernel_size_intverals):
+            for pose_wheight in range(*pose_wheight_intverals):
+                for vertex_wheight in range(*vertex_wheight_intverals):
+                    config_out = open("experiments/cfgs/lov_color_box.yml", "w")
+                    # lr_str = "{:.5f}".format(lr) if lr < 0.0001 else "{:.4f}".format(lr)
+                    lr_str = "{:.6f}".format(lr)
+                    config_formatted = config.format(kernel_size, lr_str, float(vertex_wheight), float(pose_wheight))
+                    print("Run {}:\nlr: {}\nkernel_size: {}\nvertex_wheight: {}\npose_wheight: {}".format(counter, lr, kernel_size, vertex_wheight, pose_wheight))
+                    config_out.write(config_formatted)
+                    config_out.close()
+                    counter += 1
+                    subprocess.call(['./experiments/scripts/lov_color_box_train.sh 0'], shell=True, env=os.environ)
 
 
 if __name__ == '__main__':
