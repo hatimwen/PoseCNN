@@ -1,5 +1,6 @@
 import os
 import yaml
+import numpy as np
 
 
 # blender uses wxyz and ros xyzw
@@ -27,6 +28,10 @@ def get_filename_prefix(counter):
     img_number = "0" * (6 - len(str(counter)))
     prefix = img_number + str(counter)
     return prefix
+
+
+def get_intrinsic_matrix():
+    return np.float32([[610.55992534, 0, 306.86169342], [0, 610.32086262, 240.94547232], [0, 0, 1]])
 
 
 # excpects quat in xyzw form

@@ -1,4 +1,4 @@
-from common import ros_to_blender_quat, get_filename_prefix
+from common import ros_to_blender_quat, get_filename_prefix, get_intrinsic_matrix
 import cv2
 from cv_bridge import CvBridge
 import geometry_msgs
@@ -155,7 +155,7 @@ def main():
             rotation_translation_matrix = None
             poses = None
             vertmap = np.zeros((480, 640, 3))
-            intrinsic_matrix = np.float32([[610.55992534, 0, 306.86169342], [0, 610.32086262, 240.94547232], [0, 0, 1]])
+            intrinsic_matrix = get_intrinsic_matrix()
             dist = np.float32([[0.10793695], [-0.21546604], [0.00045875], [-0.00670819]])
             mat_dict = {"center": center, "cls_indexes": cls_indexes, "factor_depth": 10000, "intrinsic_matrix":
                         intrinsic_matrix, "poses": poses, "rotation_translation_matrix": rotation_translation_matrix, "vertmap": vertmap}

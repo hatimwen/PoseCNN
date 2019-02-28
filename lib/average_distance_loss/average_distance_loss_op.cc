@@ -295,6 +295,12 @@ class AveragedistanceOp<Eigen::GpuDevice, T> : public OpKernel {
     int num_classes = bottom_point.dim_size(0);
     int num_points = bottom_point.dim_size(1);
 
+//    int num_dimensions = bottom_prediction.shape().dims();
+//    std::cout << "DIMS: " << num_dimensions << std::endl;
+//    for(int ii_dim=0; ii_dim<num_dimensions; ii_dim++) {
+//        std::cout << bottom_prediction.shape().dim_size(ii_dim)) << std::endl;
+//    }
+
     // Create output tensors
     // loss
     int dim = 1;

@@ -1,4 +1,7 @@
-- simplify code where possible 
+Lessons learned:
+- If you want to take over another big code base, run automatic quality measures over the codebase and better start from scratch, if the codebase has too many violations of warnings
+
+- simplify code where possible
 
 	r = np.random.randint(cfg.TRAIN.SYN_RATIO+1, size=1)[0]
 
