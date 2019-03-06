@@ -431,7 +431,9 @@ def _get_label_blob(roidb, intrinsic_matrix, data_out, num_classes, db_inds_syn,
                 if len(np.unique(cls_indexes)) < len(cls_indexes):
                     is_multi_instances = 1
                     # read mask image
-                    mask = pad_im(cv2.imread(roidb[i]['mask'], cv2.IMREAD_UNCHANGED), 16)
+                    mask_img = cv2.imread(roidb[i]['mask'], cv2.IMREAD_UNCHANGED)
+                    mask_img = mask_img[:, :, 0]
+                    mask = pad_im(mask_img, 16)
                 else:
                     is_multi_instances = 0
                     mask = []
