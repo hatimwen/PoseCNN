@@ -491,42 +491,44 @@ def load_and_enqueue_val(sess, net, data_layer, coord, iters=0):
         elif cfg.INPUT == 'NORMAL':
             data_blob = blobs['data_image_normal']
 
+        keep_prob = 1.0
+
         if cfg.TRAIN.SINGLE_FRAME:
             if cfg.TRAIN.SEGMENTATION:
                 if cfg.INPUT == 'RGBD':
                     if cfg.TRAIN.VERTEX_REG_2D or cfg.TRAIN.VERTEX_REG_3D:
-                        feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: 0.5, \
+                        feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: keep_prob, \
                                      net.vertex_targets: blobs['data_vertex_targets'], net.vertex_weights: blobs['data_vertex_weights'], \
                                      net.poses: blobs['data_pose'], net.extents: blobs['data_extents'], net.meta_data: blobs['data_meta_data'], \
                                      net.points: blobs['data_points'], net.symmetry: blobs['data_symmetry']}
                     else:
-                        feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: 0.5}
+                        feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: keep_prob}
                 else:
                     if cfg.TRAIN.VERTEX_REG_2D or cfg.TRAIN.VERTEX_REG_3D:
-                        feed_dict = {net.data: data_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: 0.5, \
+                        feed_dict = {net.data: data_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: keep_prob, \
                                      net.vertex_targets: blobs['data_vertex_targets'], net.vertex_weights: blobs['data_vertex_weights'], \
                                      net.poses: blobs['data_pose'], net.extents: blobs['data_extents'], net.meta_data: blobs['data_meta_data'], \
                                      net.points: blobs['data_points'], net.symmetry: blobs['data_symmetry']}
                     else:
-                        feed_dict = {net.data: data_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: 0.5}
+                        feed_dict = {net.data: data_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: keep_prob}
             else:
                 if cfg.INPUT == 'RGBD':
                     feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.im_info: blobs['data_im_info'], \
                                  net.gt_boxes: blobs['data_gt_boxes'], net.poses: blobs['data_pose'], \
-                                 net.points: blobs['data_points'], net.symmetry: blobs['data_symmetry'], net.keep_prob: 0.5}
+                                 net.points: blobs['data_points'], net.symmetry: blobs['data_symmetry'], net.keep_prob: keep_prob}
                 else:
                     feed_dict = {net.data: data_blob, net.im_info: blobs['data_im_info'], \
                                  net.gt_boxes: blobs['data_gt_boxes'], net.poses: blobs['data_pose'], \
-                                 net.points: blobs['data_points'], net.symmetry: blobs['data_symmetry'], net.keep_prob: 0.5}
+                                 net.points: blobs['data_points'], net.symmetry: blobs['data_symmetry'], net.keep_prob: keep_prob}
         else:
             if cfg.INPUT == 'RGBD':
                 feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.gt_label_2d: blobs['data_label'], \
                              net.depth: blobs['data_depth'], net.meta_data: blobs['data_meta_data'], \
-                             net.state: blobs['data_state'], net.weights: blobs['data_weights'], net.points: blobs['data_points'], net.keep_prob: 0.5}
+                             net.state: blobs['data_state'], net.weights: blobs['data_weights'], net.points: blobs['data_points'], net.keep_prob: keep_prob}
             else:
                 feed_dict = {net.data: data_blob, net.gt_label_2d: blobs['data_label'], \
                              net.depth: blobs['data_depth'], net.meta_data: blobs['data_meta_data'], \
-                             net.state: blobs['data_state'], net.weights: blobs['data_weights'], net.points: blobs['data_points'], net.keep_prob: 0.5}
+                             net.state: blobs['data_state'], net.weights: blobs['data_weights'], net.points: blobs['data_points'], net.keep_prob: keep_prob}
 
         sess.run(net.enqueue_op, feed_dict=feed_dict)
 
@@ -548,42 +550,44 @@ def load_and_enqueue(sess, net, data_layer, coord, iters=0):
         elif cfg.INPUT == 'NORMAL':
             data_blob = blobs['data_image_normal']
 
+        keep_prob = 0.5
+
         if cfg.TRAIN.SINGLE_FRAME:
             if cfg.TRAIN.SEGMENTATION:
                 if cfg.INPUT == 'RGBD':
                     if cfg.TRAIN.VERTEX_REG_2D or cfg.TRAIN.VERTEX_REG_3D:
-                        feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: 0.5, \
+                        feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: keep_prob, \
                                      net.vertex_targets: blobs['data_vertex_targets'], net.vertex_weights: blobs['data_vertex_weights'], \
                                      net.poses: blobs['data_pose'], net.extents: blobs['data_extents'], net.meta_data: blobs['data_meta_data'], \
                                      net.points: blobs['data_points'], net.symmetry: blobs['data_symmetry']}
                     else:
-                        feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: 0.5}
+                        feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: keep_prob}
                 else:
                     if cfg.TRAIN.VERTEX_REG_2D or cfg.TRAIN.VERTEX_REG_3D:
-                        feed_dict = {net.data: data_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: 0.5, \
+                        feed_dict = {net.data: data_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: keep_prob, \
                                      net.vertex_targets: blobs['data_vertex_targets'], net.vertex_weights: blobs['data_vertex_weights'], \
                                      net.poses: blobs['data_pose'], net.extents: blobs['data_extents'], net.meta_data: blobs['data_meta_data'], \
                                      net.points: blobs['data_points'], net.symmetry: blobs['data_symmetry']}
                     else:
-                        feed_dict = {net.data: data_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: 0.5}
+                        feed_dict = {net.data: data_blob, net.gt_label_2d: blobs['data_label'], net.keep_prob: keep_prob}
             else:
                 if cfg.INPUT == 'RGBD':
                     feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.im_info: blobs['data_im_info'], \
                                  net.gt_boxes: blobs['data_gt_boxes'], net.poses: blobs['data_pose'], \
-                                 net.points: blobs['data_points'], net.symmetry: blobs['data_symmetry'], net.keep_prob: 0.5}
+                                 net.points: blobs['data_points'], net.symmetry: blobs['data_symmetry'], net.keep_prob: keep_prob}
                 else:
                     feed_dict = {net.data: data_blob, net.im_info: blobs['data_im_info'], \
                                  net.gt_boxes: blobs['data_gt_boxes'], net.poses: blobs['data_pose'], \
-                                 net.points: blobs['data_points'], net.symmetry: blobs['data_symmetry'], net.keep_prob: 0.5}
+                                 net.points: blobs['data_points'], net.symmetry: blobs['data_symmetry'], net.keep_prob: keep_prob}
         else:
             if cfg.INPUT == 'RGBD':
                 feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.gt_label_2d: blobs['data_label'], \
                              net.depth: blobs['data_depth'], net.meta_data: blobs['data_meta_data'], \
-                             net.state: blobs['data_state'], net.weights: blobs['data_weights'], net.points: blobs['data_points'], net.keep_prob: 0.5}
+                             net.state: blobs['data_state'], net.weights: blobs['data_weights'], net.points: blobs['data_points'], net.keep_prob: keep_prob}
             else:
                 feed_dict = {net.data: data_blob, net.gt_label_2d: blobs['data_label'], \
                              net.depth: blobs['data_depth'], net.meta_data: blobs['data_meta_data'], \
-                             net.state: blobs['data_state'], net.weights: blobs['data_weights'], net.points: blobs['data_points'], net.keep_prob: 0.5}
+                             net.state: blobs['data_state'], net.weights: blobs['data_weights'], net.points: blobs['data_points'], net.keep_prob: keep_prob}
 
         sess.run(net.enqueue_op, feed_dict=feed_dict)
 
