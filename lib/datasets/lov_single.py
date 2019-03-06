@@ -26,7 +26,8 @@ class lov_single(datasets.imdb):
         self._data_path = os.path.join(self._lov_path, 'data')
 
         self._classes = ('__background__', cls)
-        self._class_colors = [(64, 64, 64), (1, 1, 1)]
+        self._class_colors = [(3, 3, 3), (1, 1, 1)]
+        #self._class_colors = [(64, 64, 64), (1, 1, 1)]
         self._class_weights = [1, 100]
         self._symmetry = [0, 1]
 
@@ -35,7 +36,7 @@ class lov_single(datasets.imdb):
                          '021_bleach_cleanser', '024_bowl', '025_mug', '035_power_drill', '036_wood_block', '037_scissors', '040_large_marker', \
                          '051_large_clamp', '052_extra_large_clamp', '061_foam_brick')
         self._num_classes_all = len(self._classes_all)
-        self._class_colors_all = [(64, 64, 64), (1, 1, 1), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255), (0, 255, 255), \
+        self._class_colors_all = [(3, 3, 3), (1, 1, 1), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255), (0, 255, 255), \
                               (128, 0, 0), (0, 128, 0), (0, 0, 128), (128, 128, 0), (128, 0, 128), (0, 128, 128), \
                               (64, 0, 0), (0, 64, 0), (0, 0, 64), (64, 64, 0), (64, 0, 64), (0, 64, 64), 
                               (192, 0, 0), (0, 192, 0), (0, 0, 192)]

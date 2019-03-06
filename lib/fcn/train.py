@@ -261,7 +261,7 @@ class SolverWrapper(object):
 
         last_snapshot_iter = -1
         timer = Timer()
-        epochs = 10
+        epochs = 4
         for epoch in range(epochs):
             coord_train.run = True
             coord_val.run = True
