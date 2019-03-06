@@ -3,7 +3,7 @@ import message_filters
 import cv2
 import numpy as np
 from fcn.config import cfg
-from fcn.test import vis_segmentations_vertmaps_detection
+from fcn.test import vis_segmentations_vertmaps_detection, _extract_vertmap
 from utils.blob import im_list_to_blob, pad_im, unpad_im, add_noise
 from normals import gpu_normals
 from std_msgs.msg import String
@@ -50,28 +50,13 @@ def test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count, 
     im_label = imdb.labels_to_image(im, labels)
 
     if cfg.TEST.VISUALIZE:
-        vertmap = extract_vertmap(labels, vertex_pred, imdb._extents, imdb.num_classes)
+        vertmap = _extract_vertmap(labels, vertex_pred, imdb._extents, imdb.num_classes)
         # vis_segmentations_vertmaps(im, depth_cv, im_label, imdb._class_colors, \
         #             vertmap, labels, rois, poses, poses_icp, meta_data['intrinsic_matrix'], \
         #             imdb.num_classes, imdb._points_all, cfg)
         vis_segmentations_vertmaps_detection(im, depth_cv, im_label, imdb._class_colors, \
                                    vertmap, labels, rois, poses, poses_icp, meta_data['intrinsic_matrix'], \
                                    imdb.num_classes, imdb._classes, imdb._points_all, fig)
-
-
-def extract_vertmap(im_label, vertex_pred, extents, num_classes):
-    height = im_label.shape[0]
-    width = im_label.shape[1]
-    vertmap = np.zeros((height, width, 3), dtype=np.float32)
-
-    for i in xrange(1, num_classes):
-        I = np.where(im_label == i)
-        if len(I[0]) > 0:
-            start = 3 * i
-            end = 3 * i + 3
-            vertmap[I[0], I[1], :] = vertex_pred[I[0], I[1], start:end]
-    vertmap[:, :, 2] = np.exp(vertmap[:, :, 2])
-    return vertmap
 
 
 def get_image_blob(im, im_depth, meta_data, cfg):
@@ -144,23 +129,17 @@ def get_image_blob(im, im_depth, meta_data, cfg):
 
 
 def get_data(sess, net):
-    labels_2d, probs, vertex_pred, rois, poses_init, poses_pred, poses_tanh, poses_weight = \
+
+    labels_2d, probs, vertex_pred, rois, poses_init, poses_pred = \
         sess.run([net.get_output('label_2d'), net.get_output('prob_normalized'), net.get_output('vertex_pred'), \
-                  net.get_output('rois'), net.get_output('poses_init'), net.get_output('poses_pred'), net.get_output('poses_tanh'), net.get_output("poses_weight")])
+                  net.get_output('rois'), net.get_output('poses_init'), net.get_output('poses_tanh')])
     # non-maximum suppression
     # keep = nms(rois, 0.5)
     # rois = rois[keep, :]
     # poses_init = poses_init[keep, :]
     # poses_pred = poses_pred[keep, :]
     print rois
-    print("POSES PRED")
     print(poses_pred)
-    print("POSES WEIGTH")
-    print(poses_weight)
-    print("POSES TANH")
-    print(poses_tanh.shape)
-    print(poses_tanh)
-    poses_pred = poses_tanh
 
     # combine poses
     num = rois.shape[0]

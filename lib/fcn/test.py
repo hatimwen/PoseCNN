@@ -936,7 +936,7 @@ def plot_data(im, im_depth, im_labels, colors, center_map, labels, rois, poses, 
             ax.set_ylim([im.shape[0], 0])
 
 
-def vis_segmentations_vertmaps_detection(im, im_depth, im_labels, colors, center_map, labels, rois, poses, poses_new, intrinsic_matrix, num_classes, classes, points, fig):
+def vis_segmentations_vertmaps_detection(im, im_depth, im_labels, colors, center_map, labels, rois, poses, poses_new, intrinsic_matrix, num_classes, classes, points):
     """Visual debugging of detections."""
     plot_data(im, im_depth, im_labels, colors, center_map, labels, rois, poses, poses_new, intrinsic_matrix, num_classes, classes, points)
     plt.show()
@@ -944,10 +944,9 @@ def vis_segmentations_vertmaps_detection(im, im_depth, im_labels, colors, center
     # plt.pause(0.033)
     # plt.clf()
     # plt.cla()
-    cmd = raw_input("Press Enter to continue, Type exit to exit\n")
-    plt.close(fig)
-    if cmd == "exit":
-        sys.exit()
+    # cmd = raw_input("Press Enter to continue, Type exit to exit\n")
+    # if cmd == "exit":
+    #     sys.exit()
 
 
 def vis_segmentations_vertmaps_3d(im, im_depth, im_labels, im_labels_gt, colors, vertmap, vertmap_target,
