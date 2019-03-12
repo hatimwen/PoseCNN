@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import timeit
 
 
-def test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count, fig):
+def test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count):
     if depth is not None:
         if depth.encoding == '32FC1':
             depth_32 = cv_bridge.imgmsg_to_cv2(depth) * 1000
@@ -56,7 +56,7 @@ def test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count, 
         #             imdb.num_classes, imdb._points_all, cfg)
         vis_segmentations_vertmaps_detection(im, depth_cv, im_label, imdb._class_colors, \
                                    vertmap, labels, rois, poses, poses_icp, meta_data['intrinsic_matrix'], \
-                                   imdb.num_classes, imdb._classes, imdb._points_all, fig)
+                                   imdb.num_classes, imdb._classes, imdb._points_all)
 
 
 def get_image_blob(im, im_depth, meta_data, cfg):
@@ -130,9 +130,9 @@ def get_image_blob(im, im_depth, meta_data, cfg):
 
 def get_data(sess, net):
 
-    labels_2d, probs, vertex_pred, rois, poses_init, poses_pred = \
+    labels_2d, probs, vertex_pred, rois, poses_init, pool_score, pool5, pool4, poses_pred, poses_pred2 = \
         sess.run([net.get_output('label_2d'), net.get_output('prob_normalized'), net.get_output('vertex_pred'), \
-                  net.get_output('rois'), net.get_output('poses_init'), net.get_output('poses_tanh')])
+                  net.get_output('rois'), net.get_output('poses_init'), net.get_output("pool_score"), net.get_output("pool5"), net.get_output("pool4"), net.get_output('poses_tanh'), net.get_output("poses_pred")])
     # non-maximum suppression
     # keep = nms(rois, 0.5)
     # rois = rois[keep, :]

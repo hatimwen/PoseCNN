@@ -35,6 +35,7 @@ from normals import gpu_normals
 # from pose_refinement import refiner
 # from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+from matplotlib import colors as mcolors
 
 def _get_image_blob(im, im_depth, meta_data):
     """Converts an image into a network input.
@@ -839,6 +840,7 @@ def plot_data(im, im_depth, im_labels, colors, center_map, labels, rois, poses, 
 
     # show class label
     ax = fig.add_subplot(3, 3, 3)
+    im_labels[im_labels == 3] = 150
     plt.imshow(im_labels)
     ax.set_title('class labels')
 

@@ -8,6 +8,7 @@ import cv2
 import os
 from fcn.config import cfg, cfg_from_file
 import pprint
+import random
 
 
 def prepare_config():
@@ -52,14 +53,15 @@ def main():
     sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True, gpu_options=gpu_options))
     # model = "trained_nets/run219/vgg16_fcn_color_single_frame_2d_pose_add_sym_lov_box_iter_397_epoch_7.ckpt"
     # model = "trained_nets/run170/vgg16_fcn_color_single_frame_2d_pose_add_sym_lov_box_iter_497_epoch_4.ckpt"
-    model = "trained_nets/run247/vgg16_fcn_color_single_frame_2d_pose_add_sym_lov_box_iter_397_epoch_4.ckpt"
+    model = "trained_nets/run275/vgg16_fcn_color_single_frame_2d_pose_add_sym_lov_box_iter_397_epoch_4.ckpt"
     saver.restore(sess, model)
     print ('Loading model weights from {:s}').format(model)
 
     data_folder = "/home/satco/catkin_ws/src/Deep_Object_Pose/data/Static"
 
-    for i in range(10):
-        prefix = get_filename_prefix(i)
+    for i in range(5):
+        j = random.randint(4000, 4999)
+        prefix = get_filename_prefix(j)
         im = cv2.imread(os.path.join(data_folder, prefix + ".png"))
         depth_cv = cv2.imread(os.path.join(data_folder, prefix + ".depth.png"), cv2.IMREAD_ANYDEPTH)
         # run network

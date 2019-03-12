@@ -146,9 +146,7 @@ if __name__ == '__main__':
     count = 0
     count_inner = 0
     dataset_name = os.path.split(args.bag_name)[1][:-4]
-    # plt.ion()
-    fig = plt.figure()
-    plt.close()
+
     topics = bag.get_type_and_topic_info().topics
 
     rgb = None
@@ -167,9 +165,9 @@ if __name__ == '__main__':
             count_inner += 1
             if count_inner % 2 == 0:
                 try:
-                    test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count/2 - 1, fig)
+                    test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count/2 - 1)
                 except NameError:
-                    test_ros(sess, network, imdb, meta_data, cfg, rgb, None, cv_bridge, count/2 - 1, fig)
+                    test_ros(sess, network, imdb, meta_data, cfg, rgb, None, cv_bridge, count/2 - 1)
 
         count += 1
 

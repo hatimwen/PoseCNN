@@ -179,3 +179,7 @@ vertex_targets[y, x, 3*cls+2] = math.log(z) in minibatch.py
 and
 exp(vertmap[offset + 2]); in hough_voting_gpu_op.cu.cc
 
+- Comment and code disagree, is it object or batch now?
+
+    // for each object
+    for (int n = 0; n < batch_size; n++)
