@@ -14,7 +14,7 @@ TRAIN:
   LEARNING_RATE: {}
   MOMENTUM: 0.9
   GAMMA: 0.1
-  STEPSIZE: 10000
+  STEPSIZE: {}
   SYMSIZE: 0
   SCALES_BASE: !!python/tuple [1.0]
   IMS_PER_BATCH: 2
@@ -52,19 +52,21 @@ TEST:
 '''
 
     # min, max, stepsize
-    lr_intverals = [0.00016, 0.000162 + 0.00001, 0.000002]
-    kernel_size_intverals = [3, 51 + 1, 8]
+    lr_intverals = [0.000166, 0.000168 + 0.0000001, 0.000001]
+    kernel_size_intverals = [43, 43 + 1, 8]
     pose_wheight_intverals = [1, 2, 2]
     vertex_wheight_intverals = [3, 4, 2]
+    stepsize_intervals = [1500, 2500+1, 500]
     counter = 0
     for lr in arange(*lr_intverals):
         for kernel_size in range(*kernel_size_intverals):
             for pose_wheight in range(*pose_wheight_intverals):
                 for vertex_wheight in range(*vertex_wheight_intverals):
+                  for stepsize in range(*stepsize_intervals):
                     config_out = open("experiments/cfgs/lov_color_box.yml", "w")
                     # lr_str = "{:.5f}".format(lr) if lr < 0.0001 else "{:.4f}".format(lr)
                     lr_str = "{:.6f}".format(lr)
-                    config_formatted = config.format(kernel_size, lr_str, float(vertex_wheight), float(pose_wheight))
+                    config_formatted = config.format(kernel_size, lr_str, stepsize, float(vertex_wheight), float(pose_wheight))
                     print("Run {}:\nlr: {}\nkernel_size: {}\nvertex_wheight: {}\npose_wheight: {}".format(counter, lr, kernel_size, vertex_wheight, pose_wheight))
                     config_out.write(config_formatted)
                     config_out.close()
