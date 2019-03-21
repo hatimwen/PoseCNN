@@ -183,3 +183,7 @@ exp(vertmap[offset + 2]); in hough_voting_gpu_op.cu.cc
 
     // for each object
     for (int n = 0; n < batch_size; n++)
+
+- Import hell, meaning the order in which things are imported matters.
+    # This can not be imported at the top like it should be, but has to be imported after the default config has been merged with the file config
+    from networks.factory import get_network
