@@ -5,14 +5,15 @@ import json
 import os
 import numpy as np
 import scipy.io as sio
+import cv2
 
 
 def main():
-    src_folder = "/home/satco/catkin_ws/src/Deep_Object_Pose/data/Static"
-    dst_folder = "/home/satco/remote_root/mnt/drive_c/datasets/kaju/PoseCNN/data/LOV/data/dope"
+    src_folder = "/home/satco/catkin_ws/src/Deep_Object_Pose/data/Static3"
+    dst_folder = "/home/satco/remote_root/mnt/drive_c/datasets/kaju/PoseCNN/data/LOV/data/dope3"
     intrinsic_matrix = get_intrinsic_matrix()
-    for i in range(5000):
-        if i % 1000 == 0:
+    for i in range(5407):
+        if i % 500 == 0:
             print(i)
         try:
             prefix = get_filename_prefix(i)
@@ -20,7 +21,10 @@ def main():
             src_path_prefix = os.path.join(src_folder, prefix)
             dst_path_prefix = os.path.join(dst_folder, prefix)
 
-            json_f = open(os.path.join(src_folder, prefix + ".json"))
+            try:
+                json_f = open(os.path.join(src_folder, prefix + ".json"))
+            except IOError:
+                continue
             try:
                 dope_meta = json.load(json_f)
             except ValueError:
@@ -30,20 +34,25 @@ def main():
             cls_indexes = np.float32(cls_indexes)
             poses = np.empty((3, 4))
             centers = []
-            for box in objects:
+            img = cv2.imread(src_path_prefix + ".is.png")
+            # set background to zero to be consistent with PoseCNN data
+            colors_in_img = list(np.unique(img))
+            colors_in_img.remove(0)
+            instance_ids = [box["instance_id"] for box in objects]
+            background_color = (set(colors_in_img)-set(instance_ids)).pop()
+            img[img == background_color] = 0
+            for j, box in enumerate(sorted(objects, key=lambda k: k["instance_id"])):
                 centers.append(box["projected_cuboid_centroid"])
                 # Dope is in cm posecnn in m
-                pose = rot_trans_to_matrix(box["quaternion_xyzw"], np.float32(box["location"])/100)
+                pose = rot_trans_to_matrix(box["quaternion_xyzw"], np.float32(box["location"]) / 100)
                 poses = np.dstack((poses, pose))
+                if j+1 != box["instance_id"]:
+                    img[img == box["instance_id"]] = j+1
 
-            try:
-                centers = [centers[1], centers[2], centers[0]]
-            except IndexError:
-                continue
-
+            cv2.imwrite(dst_path_prefix + "-object.png", img)
             copyfile(src_path_prefix + ".png", dst_path_prefix + "-color.png")
             copyfile(src_path_prefix + ".cs.png", dst_path_prefix + "-label.png")
-            copyfile(src_path_prefix + ".is.png", dst_path_prefix + "-object.png")
+            # copyfile(src_path_prefix + ".is.png", dst_path_prefix + "-object.png")
             copyfile(src_path_prefix + ".depth.png", dst_path_prefix + "-depth.png")
 
             centers = np.float32(centers)
@@ -57,7 +66,8 @@ def main():
             sio.savemat(meta_mat_path, mat_dict)
             json_f.close()
         except Exception as e:
-            print(e)
+            import traceback
+            print(traceback.format_exc())
             print(i)
             json_f.close()
             exit()
