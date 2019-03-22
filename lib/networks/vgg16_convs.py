@@ -28,7 +28,7 @@ class vgg16_convs(Network):
             self.data_p = tf.placeholder(tf.float32, shape=[None, None, None, 3])
         self.gt_label_2d = tf.placeholder(tf.int32, shape=[None, None, None])
         self.keep_prob = tf.placeholder(tf.float32)
-        self.is_train = tf.placeholder(tf.bool)
+        self.is_train = tf.placeholder_with_default(True, shape=())
         if self.vertex_reg:
             self.vertex_targets = tf.placeholder(tf.float32, shape=[None, None, None, 3 * num_classes])
             self.vertex_weights = tf.placeholder(tf.float32, shape=[None, None, None, 3 * num_classes])
@@ -182,7 +182,8 @@ class vgg16_convs(Network):
                     scores = self.get_output('prob')
                     labels = self.get_output('gt_label_weight')
                     self.layers['loss_cls'] = loss_cross_entropy_single_frame(scores, labels)
-                    (self.feed('label_2d', 'vertex_pred', 'extents', 'meta_data', 'poses', 'loss_cls')
+                    self.layers['is_train'] = self.is_train
+                    (self.feed('label_2d', 'vertex_pred', 'extents', 'meta_data', 'poses', 'loss_cls', 'is_train')
                          .hough_voting_gpu(self.is_train, self.kernel_size, self.vote_threshold, self.vote_percentage, self.skip_pixels, name='hough'))
 
                     self.layers['rois'] = self.get_output('hough')[0]
@@ -271,7 +272,7 @@ class vgg16_convs(Network):
                     labels = self.get_output('gt_label_weight')
                     self.layers['loss_cls'] = loss_cross_entropy_single_frame(scores, labels)
                     self.layers['is_train'] = self.is_train
-                    (self.feed('label_2d', 'bn24', 'extents', 'meta_data', 'poses', 'loss_cls')
+                    (self.feed('label_2d', 'bn24', 'extents', 'meta_data', 'poses', 'loss_cls', 'is_train')
                      .hough_voting_gpu(self.kernel_size, self.vote_threshold, self.vote_percentage, self.skip_pixels, name='hough'))
 
                     self.layers['rois'] = self.get_output('hough')[0]
