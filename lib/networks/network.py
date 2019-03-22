@@ -255,7 +255,7 @@ class Network(object):
 
     @layer
     def hough_voting_gpu(self, input, is_train, kernel_size, threshold, per_threshold, skip_pixels, name):
-        return hough_voting_gpu_op.hough_voting_gpu(input[0], input[1], input[2], input[3], input[4], input[5], is_train, kernel_size, \
+        return hough_voting_gpu_op.hough_voting_gpu(input[0], input[1], input[2], input[3], input[4], input[5], input[6], kernel_size, \
                    threshold, per_threshold, skip_pixels, name=name)
 
     @layer

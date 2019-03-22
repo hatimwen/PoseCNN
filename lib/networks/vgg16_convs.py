@@ -270,8 +270,9 @@ class vgg16_convs(Network):
                     scores = self.get_output('prob')
                     labels = self.get_output('gt_label_weight')
                     self.layers['loss_cls'] = loss_cross_entropy_single_frame(scores, labels)
+                    self.layers['is_train'] = self.is_train
                     (self.feed('label_2d', 'bn24', 'extents', 'meta_data', 'poses', 'loss_cls')
-                     .hough_voting_gpu(self.is_train, self.kernel_size, self.vote_threshold, self.vote_percentage, self.skip_pixels, name='hough'))
+                     .hough_voting_gpu(self.kernel_size, self.vote_threshold, self.vote_percentage, self.skip_pixels, name='hough'))
 
                     self.layers['rois'] = self.get_output('hough')[0]
                     self.layers['poses_init'] = self.get_output('hough')[1]
