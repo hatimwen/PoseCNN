@@ -56,7 +56,7 @@ TEST:
     kernel_size_intverals = [43, 43 + 1, 8]
     pose_wheight_intverals = [1, 2, 2]
     vertex_wheight_intverals = [3, 4, 2]
-    stepsize_intervals = [1500, 2500+1, 500]
+    stepsize_intervals = [1500, 4500+1, 500]
     counter = 0
     for lr in arange(*lr_intverals):
         for kernel_size in range(*kernel_size_intverals):
