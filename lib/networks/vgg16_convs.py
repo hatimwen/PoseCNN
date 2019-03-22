@@ -18,16 +18,9 @@ class vgg16_convs(Network):
         self.trainable = trainable
         # if vote_threshold < 0, only detect single instance (default). 
         # Otherwise, multiple instances are detected if hough voting score larger than the threshold
-        if is_train:
-            self.is_train = 1
-            self.skip_pixels = 10
-            self.vote_threshold = vote_threshold
-            self.vote_percentage = 0.02
-        else:
-            self.is_train = 0
-            self.skip_pixels = 10
-            self.vote_threshold = vote_threshold
-            self.vote_percentage = 0.02
+        self.skip_pixels = 10
+        self.vote_threshold = vote_threshold
+        self.vote_percentage = 0.02
         self.kernel_size = kernel_size
 
         self.data = tf.placeholder(tf.float32, shape=[None, None, None, 3])
@@ -35,6 +28,7 @@ class vgg16_convs(Network):
             self.data_p = tf.placeholder(tf.float32, shape=[None, None, None, 3])
         self.gt_label_2d = tf.placeholder(tf.int32, shape=[None, None, None])
         self.keep_prob = tf.placeholder(tf.float32)
+        self.is_train = tf.placeholder(tf.bool)
         if self.vertex_reg:
             self.vertex_targets = tf.placeholder(tf.float32, shape=[None, None, None, 3 * num_classes])
             self.vertex_weights = tf.placeholder(tf.float32, shape=[None, None, None, 3 * num_classes])
@@ -63,9 +57,9 @@ class vgg16_convs(Network):
                 self.layers = dict({'data': data, 'data_p': data_p, 'gt_label_2d': gt_label_2d})
         else:
             if self.vertex_reg:
-                q = tf.FIFOQueue(queue_size, [tf.float32, tf.int32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32])
-                self.enqueue_op = q.enqueue([self.data, self.gt_label_2d, self.keep_prob, self.vertex_targets, self.vertex_weights, self.poses, self.extents, self.meta_data, self.points, self.symmetry])
-                data, gt_label_2d, self.keep_prob_queue, vertex_targets, vertex_weights, poses, extents, meta_data, points, symmetry = q.dequeue()
+                q = tf.FIFOQueue(queue_size, [tf.float32, tf.int32, tf.bool, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32])
+                self.enqueue_op = q.enqueue([self.data, self.gt_label_2d, self.is_train, self.keep_prob, self.vertex_targets, self.vertex_weights, self.poses, self.extents, self.meta_data, self.points, self.symmetry])
+                data, gt_label_2d, self.is_train, self.keep_prob_queue, vertex_targets, vertex_weights, poses, extents, meta_data, points, symmetry = q.dequeue()
                 self.layers = dict({'data': data, 'gt_label_2d': gt_label_2d, 'vertex_targets': vertex_targets, 'vertex_weights': vertex_weights, 
                                     'poses': poses, 'extents': extents, 'meta_data': meta_data, 'points': points, 'symmetry': symmetry})
             else:
@@ -83,22 +77,36 @@ class vgg16_convs(Network):
         dropout_on = True
         (self.feed('data')
              .conv(3, 3, 64, 1, 1, name='conv1_1', c_i=3, trainable=self.trainable)
+             .batch_norm(relu=True, name='bn1', is_training=self.is_train)
              .conv(3, 3, 64, 1, 1, name='conv1_2', c_i=64, trainable=self.trainable)
+             .batch_norm(relu=True, name='bn2', is_training=self.is_train)
              .max_pool(2, 2, 2, 2, name='pool1')
              .conv(3, 3, 128, 1, 1, name='conv2_1', c_i=64, trainable=self.trainable)
+             .batch_norm(relu=True, name='bn3', is_training=self.is_train)
              .conv(3, 3, 128, 1, 1, name='conv2_2', c_i=128, trainable=self.trainable)
+             .batch_norm(relu=True, name='bn4', is_training=self.is_train)
              .max_pool(2, 2, 2, 2, name='pool2')
              .conv(3, 3, 256, 1, 1, name='conv3_1', c_i=128, trainable=self.trainable)
+             .batch_norm(relu=True, name='bn5', is_training=self.is_train)
              .conv(3, 3, 256, 1, 1, name='conv3_2', c_i=256, trainable=self.trainable)
+             .batch_norm(relu=True, name='bn6', is_training=self.is_train)
              .conv(3, 3, 256, 1, 1, name='conv3_3', c_i=256, trainable=self.trainable)
+             .batch_norm(relu=True, name='bn7', is_training=self.is_train)
              .max_pool(2, 2, 2, 2, name='pool3')
              .conv(3, 3, 512, 1, 1, name='conv4_1', c_i=256, trainable=self.trainable)
+             .batch_norm(relu=True, name='bn8', is_training=self.is_train)
              .conv(3, 3, 512, 1, 1, name='conv4_2', c_i=512, trainable=self.trainable)
+             .batch_norm(relu=True, name='bn9', is_training=self.is_train)
              .conv(3, 3, 512, 1, 1, name='conv4_3', c_i=512, trainable=self.trainable)
+             .batch_norm(relu=True, name='bn10', is_training=self.is_train)
              .max_pool(2, 2, 2, 2, name='pool4')
              .conv(3, 3, 512, 1, 1, name='conv5_1', c_i=512, trainable=self.trainable)
+             .batch_norm(relu=True, name='bn11', is_training=self.is_train)
              .conv(3, 3, 512, 1, 1, name='conv5_2', c_i=512, trainable=self.trainable)
-             .conv(3, 3, 512, 1, 1, name='conv5_3', c_i=512, trainable=self.trainable))
+             .batch_norm(relu=True, name='bn12', is_training=self.is_train)
+             .conv(3, 3, 512, 1, 1, name='conv5_3', c_i=512, trainable=self.trainable)
+             .batch_norm(relu=True, name='bn13', is_training=self.is_train))
+
 
         if self.input_format == 'RGBD':
             (self.feed('data_p')
@@ -129,12 +137,17 @@ class vgg16_convs(Network):
                  .concat(3, name='concat_conv4')
                  .conv(1, 1, self.num_units, 1, 1, name='score_conv4', c_i=1024))
         else:
-            (self.feed('conv5_3')
+            (self.feed('bn13')
                  .conv(1, 1, self.num_units, 1, 1, name='score_conv5', c_i=512)
-                 .deconv(4, 4, self.num_units, 2, 2, name='upscore_conv5', trainable=False))
+                 .batch_norm(relu=True, name='bn14', is_training=self.is_train)
+                 .conv(3, 3, 512, 1, 1, name='conv5_3', c_i=512, trainable=self.trainable)
+                 .batch_norm(relu=True, name='bn15', is_training=self.is_train)
+                 .deconv(4, 4, self.num_units, 2, 2, name='upscore_conv5', trainable=False)
+                 .batch_norm(relu=True, name='bn16', is_training=self.is_train))
 
-            (self.feed('conv4_3')
-                 .conv(1, 1, self.num_units, 1, 1, name='score_conv4', c_i=512))
+            (self.feed('bn10')
+                 .conv(1, 1, self.num_units, 1, 1, name='score_conv4', c_i=512)
+                 .batch_norm(relu=True, name='bn17', is_training=self.is_train))
         if dropout_on:
             (self.feed('score_conv4', 'upscore_conv5')
                  .add(name='add_score')
@@ -168,6 +181,7 @@ class vgg16_convs(Network):
 
                 if self.vertex_reg_2d:
                     from fcn.train import loss_cross_entropy_single_frame
+                    tf.layers.batch_normalization
                     scores = self.get_output('prob')
                     labels = self.get_output('gt_label_weight')
                     self.layers['loss_cls'] = loss_cross_entropy_single_frame(scores, labels)
@@ -219,15 +233,17 @@ class vgg16_convs(Network):
                                  .softmax(-1, name='domain_prob')
                                  .argmax(-1, name='domain_label'))
         else:
-            (self.feed('score_conv4', 'upscore_conv5')
+            (self.feed('bn17', 'bn16')
                  .add(name='add_score')
-                 .deconv(int(16*self.scale), int(16*self.scale), self.num_units, int(8*self.scale), int(8*self.scale), name='upscore', trainable=False))
+                 .deconv(int(16*self.scale), int(16*self.scale), self.num_units, int(8*self.scale), int(8*self.scale), name='upscore', trainable=False)
+                 .batch_norm(relu=True, name='bn18', is_training=self.is_train))
 
-            (self.feed('upscore')
+            (self.feed('bn18')
                  .conv(1, 1, self.num_classes, 1, 1, name='score', c_i=self.num_units)
+                 .batch_norm(relu=True, name='bn19', is_training=self.is_train)
                  .log_softmax_high_dimension(self.num_classes, name='prob'))
 
-            (self.feed('score')
+            (self.feed('bn19')
                  .softmax_high_dimension(self.num_classes, name='prob_normalized')
                  .argmax_2d(name='label_2d'))
 
@@ -235,21 +251,26 @@ class vgg16_convs(Network):
                  .hard_label(threshold=self.threshold_label, name='gt_label_weight'))
 
             if self.vertex_reg:
-                (self.feed('conv5_3')
+                (self.feed('bn15')
                      .conv(1, 1, 128, 1, 1, name='score_conv5_vertex', relu=False, c_i=512)
-                     .deconv(4, 4, 128, 2, 2, name='upscore_conv5_vertex', trainable=False))
+                     .batch_norm(relu=True, name='bn20', is_training=self.is_train)
+                     .deconv(4, 4, 128, 2, 2, name='upscore_conv5_vertex', trainable=False)
+                     .batch_norm(relu=True, name='bn21', is_training=self.is_train))
 
-                (self.feed('conv4_3')
-                     .conv(1, 1, 128, 1, 1, name='score_conv4_vertex', relu=False, c_i=512))
+                (self.feed('bn10')
+                     .conv(1, 1, 128, 1, 1, name='score_conv4_vertex', relu=False, c_i=512)
+                     .batch_norm(relu=True, name='bn22', is_training=self.is_train))
 
-                (self.feed('score_conv4_vertex', 'upscore_conv5_vertex')
+                (self.feed('bn22', 'bn21')
                      .add(name='add_score_vertex')
                      .deconv(int(16*self.scale), int(16*self.scale), 128, int(8*self.scale), int(8*self.scale), name='upscore_vertex', trainable=False)
-                     .conv(1, 1, 3 * self.num_classes, 1, 1, name='vertex_pred', relu=False, c_i=128))
+                     .batch_norm(relu=True, name='bn23', is_training=self.is_train)
+                     .conv(1, 1, 3 * self.num_classes, 1, 1, name='vertex_pred', relu=False, c_i=128)
+                     .batch_norm(relu=True, name='bn24', is_training=self.is_train))
 
                 if self.vertex_reg_2d:
 
-                    (self.feed('label_2d', 'vertex_pred', 'extents', 'meta_data', 'poses')
+                    (self.feed('label_2d', 'bn24', 'extents', 'meta_data', 'poses')
                          .hough_voting_gpu(self.is_train, self.vote_threshold, self.vote_percentage, self.skip_pixels, name='hough'))
 
                     self.layers['rois'] = self.get_output('hough')[0]
@@ -259,18 +280,20 @@ class vgg16_convs(Network):
                     
                     if self.pose_reg:
                         # roi pooling without masking
-                        (self.feed('conv5_3', 'rois')
+                        (self.feed('bn13', 'rois')
                              .roi_pool(7, 7, 1.0 / 16.0, 0, name='pool5'))
                              #.crop_pool_new(16.0, pool_size=7, name='pool5'))
                              
-                        (self.feed('conv4_3', 'rois')
+                        (self.feed('bn10', 'rois')
                              .roi_pool(7, 7, 1.0 / 8.0, 0, name='pool4'))
                              #.crop_pool_new(8.0, pool_size=7, name='pool4'))
 
                         (self.feed('pool5', 'pool4')
                              .add(name='pool_score')
                              .fc(4096, height=7, width=7, channel=512, name='fc6')
+                             .batch_norm(relu=True, name='bn25', is_training=self.is_train)
                              .fc(4096, num_in=4096, name='fc7')
+                             .batch_norm(relu=True, name='bn26', is_training=self.is_train)
                              .fc(4 * self.num_classes, relu=False, name='fc8')
                              .tanh(name='poses_tanh'))
 
