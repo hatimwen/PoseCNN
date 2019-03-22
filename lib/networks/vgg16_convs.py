@@ -60,7 +60,7 @@ class vgg16_convs(Network):
                 q = tf.FIFOQueue(queue_size, [tf.float32, tf.int32, tf.bool, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32])
                 self.enqueue_op = q.enqueue([self.data, self.gt_label_2d, self.is_train, self.keep_prob, self.vertex_targets, self.vertex_weights, self.poses, self.extents, self.meta_data, self.points, self.symmetry])
                 data, gt_label_2d, self.is_train, self.keep_prob_queue, vertex_targets, vertex_weights, poses, extents, meta_data, points, symmetry = q.dequeue()
-                self.layers = dict({'data': data, 'gt_label_2d': gt_label_2d, 'vertex_targets': vertex_targets, 'vertex_weights': vertex_weights, 
+                self.layers = dict({'data': data, 'gt_label_2d': gt_label_2d, 'vertex_targets': vertex_targets, 'vertex_weights': vertex_weights,
                                     'poses': poses, 'extents': extents, 'meta_data': meta_data, 'points': points, 'symmetry': symmetry})
             else:
                 q = tf.FIFOQueue(queue_size, [tf.float32, tf.int32, tf.float32])
@@ -179,7 +179,6 @@ class vgg16_convs(Network):
 
                 if self.vertex_reg_2d:
                     from fcn.train import loss_cross_entropy_single_frame
-                    tf.layers.batch_normalization
                     scores = self.get_output('prob')
                     labels = self.get_output('gt_label_weight')
                     self.layers['loss_cls'] = loss_cross_entropy_single_frame(scores, labels)
@@ -196,7 +195,7 @@ class vgg16_convs(Network):
                         (self.feed('conv5_3', 'rois')
                              .roi_pool(7, 7, 1.0 / 16.0, 0, name='pool5'))
                              #.crop_pool_new(16.0, pool_size=7, name='pool5'))
-                             
+
                         (self.feed('conv4_3', 'rois')
                              .roi_pool(7, 7, 1.0 / 8.0, 0, name='pool4'))
                              #.crop_pool_new(8.0, pool_size=7, name='pool4'))
@@ -226,7 +225,7 @@ class vgg16_convs(Network):
                             (self.feed('pool_score')
                                  .gradient_reversal(0.01, name='greversal')
                                  .fc(256, height=7, width=7, channel=512, name='fc9')
-                                 .dropout(self.keep_prob_queue, name='drop9') 
+                                 .dropout(self.keep_prob_queue, name='drop9')
                                  .fc(2, name='domain_score')
                                  .softmax(-1, name='domain_prob')
                                  .argmax(-1, name='domain_label'))
@@ -267,21 +266,24 @@ class vgg16_convs(Network):
                      .batch_norm(relu=True, name='bn24', is_training=self.is_train))
 
                 if self.vertex_reg_2d:
-
-                    (self.feed('label_2d', 'bn24', 'extents', 'meta_data', 'poses')
-                         .hough_voting_gpu(self.is_train, self.vote_threshold, self.vote_percentage, self.skip_pixels, name='hough'))
+                    from fcn.train import loss_cross_entropy_single_frame
+                    scores = self.get_output('prob')
+                    labels = self.get_output('gt_label_weight')
+                    self.layers['loss_cls'] = loss_cross_entropy_single_frame(scores, labels)
+                    (self.feed('label_2d', 'bn24', 'extents', 'meta_data', 'poses', 'loss_cls')
+                     .hough_voting_gpu(self.is_train, self.kernel_size, self.vote_threshold, self.vote_percentage, self.skip_pixels, name='hough'))
 
                     self.layers['rois'] = self.get_output('hough')[0]
                     self.layers['poses_init'] = self.get_output('hough')[1]
                     self.layers['poses_target'] = self.get_output('hough')[2]
                     self.layers['poses_weight'] = self.get_output('hough')[3]
-                    
+
                     if self.pose_reg:
                         # roi pooling without masking
                         (self.feed('bn13', 'rois')
                              .roi_pool(7, 7, 1.0 / 16.0, 0, name='pool5'))
                              #.crop_pool_new(16.0, pool_size=7, name='pool5'))
-                             
+
                         (self.feed('bn10', 'rois')
                              .roi_pool(7, 7, 1.0 / 8.0, 0, name='pool4'))
                              #.crop_pool_new(8.0, pool_size=7, name='pool4'))
