@@ -74,7 +74,7 @@ class vgg16_convs(Network):
         self.setup()
 
     def setup(self):
-        dropout_on = True
+        dropout_on = False
         (self.feed('data')
              .conv(3, 3, 64, 1, 1, name='conv1_1', c_i=3, trainable=self.trainable)
              .batch_norm(relu=True, name='bn1', is_training=self.is_train)
@@ -140,8 +140,6 @@ class vgg16_convs(Network):
             (self.feed('bn13')
                  .conv(1, 1, self.num_units, 1, 1, name='score_conv5', c_i=512)
                  .batch_norm(relu=True, name='bn14', is_training=self.is_train)
-                 .conv(3, 3, 512, 1, 1, name='conv5_3', c_i=512, trainable=self.trainable)
-                 .batch_norm(relu=True, name='bn15', is_training=self.is_train)
                  .deconv(4, 4, self.num_units, 2, 2, name='upscore_conv5', trainable=False)
                  .batch_norm(relu=True, name='bn16', is_training=self.is_train))
 
@@ -251,7 +249,7 @@ class vgg16_convs(Network):
                  .hard_label(threshold=self.threshold_label, name='gt_label_weight'))
 
             if self.vertex_reg:
-                (self.feed('bn15')
+                (self.feed('bn13')
                      .conv(1, 1, 128, 1, 1, name='score_conv5_vertex', relu=False, c_i=512)
                      .batch_norm(relu=True, name='bn20', is_training=self.is_train)
                      .deconv(4, 4, 128, 2, 2, name='upscore_conv5_vertex', trainable=False)
