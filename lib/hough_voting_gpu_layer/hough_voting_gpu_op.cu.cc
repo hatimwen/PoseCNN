@@ -384,7 +384,7 @@ __global__ void compute_max_indexes_kernel(const int nthreads, int* max_indexes,
 
 __global__ void compute_rois_kernel(const int nthreads, float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain,
     const float* extents, const float* meta_data, const float* gt, const float* cls_loss, float* hough_space, float* hough_data, int* max_indexes, int* class_indexes,
-    int is_train, int batch_index, const int height, const int width, const int num_classes, const int num_gt, int* num_rois)
+    bool is_train, int batch_index, const int height, const int width, const int num_classes, const int num_gt, int* num_rois)
 {
   CUDA_1D_KERNEL_LOOP(index, nthreads)
   {
@@ -614,7 +614,7 @@ void set_gradients(float* top_label, float* top_vertex, int batch_size, int heig
 void HoughVotingLaucher(OpKernelContext* context,
     const int* labelmap, const float* vertmap, const float* extents, const float* meta_data, const float* gt, const float* cls_loss, const int kernel_size,
     const int batch_index, const int batch_size, const int height, const int width, const int num_classes, const int num_gt, 
-    const int is_train, const float inlierThreshold, const int labelThreshold, const float votingThreshold, const float perThreshold, 
+    const bool is_train, const float inlierThreshold, const int labelThreshold, const float votingThreshold, const float perThreshold,
     const int skip_pixels, 
     float* top_box, float* top_pose, float* top_target, float* top_weight, int* top_domain, int* num_rois, const Eigen::GpuDevice& d)
 {

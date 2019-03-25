@@ -36,7 +36,6 @@ typedef Eigen::ThreadPoolDevice CPUDevice;
 
 REGISTER_OP("Houghvotinggpu")
     .Attr("T: {float, double}")
-    .Attr("is_train: int")
     .Attr("kernel_size: int")
     .Attr("threshold_vote: float")
     .Attr("threshold_percentage: float")
@@ -47,6 +46,7 @@ REGISTER_OP("Houghvotinggpu")
     .Input("bottom_meta_data: T")
     .Input("bottom_gt: T")
     .Input("cls_loss: float")
+    .Input("is_train: bool")
     .Output("top_box: T")
     .Output("top_pose: T")
     .Output("top_target: T")
@@ -73,7 +73,7 @@ inline float getIoU(const cv::Rect& bb1, const cv::Rect bb2);
 inline float angle_distance(cv::Point2f x, cv::Point2f n, cv::Point2f p);
 
 void hough_voting(const int* labelmap, const float* vertmap, std::vector<std::vector<cv::Point3f>> bb3Ds,
-  int batch, int height, int width, int num_classes, int is_train,
+  int batch, int height, int width, int num_classes, bool is_train,
   float fx, float fy, float px, float py, std::vector<cv::Vec<float, 14> >& outputs);
 
 void compute_target_weight(int height, int width, float* target, float* weight, std::vector<std::vector<cv::Point3f>> bb3Ds, 
@@ -87,7 +87,7 @@ inline void compute_width_height(const int* labelmap, const float* vertmap, cv::
 void HoughVotingLaucher(OpKernelContext* context,
     const int* labelmap, const float* vertmap, const float* extents, const float* meta_data, const float* gt, const float* cls_loss, const int kernel_size,
     const int batch_index, const int batch_size, const int height, const int width, const int num_classes, const int num_gt,
-    const int is_train, const float inlierThreshold, const int labelThreshold, const float votingThreshold, const float perThreshold,
+    const bool is_train, const float inlierThreshold, const int labelThreshold, const float votingThreshold, const float perThreshold,
     const int skip_pixels,float* top_box, float* top_pose, float* top_target, float* top_weight, 
     int* top_domain, int* num_rois, const Eigen::GpuDevice& d);
 
@@ -136,12 +136,7 @@ class HoughvotinggpuOp : public OpKernel {
  public:
   explicit HoughvotinggpuOp(OpKernelConstruction* context) : OpKernel(context) {
     // Get the pool height
-    OP_REQUIRES_OK(context,
-                   context->GetAttr("is_train", &is_train_));
     // Check that pooled_height is positive
-    OP_REQUIRES(context, is_train_ >= 0,
-                errors::InvalidArgument("Need is_train >= 0, got ",
-                                        is_train_));
     OP_REQUIRES_OK(context, context->GetAttr("kernel_size", &kernel_size_));
     OP_REQUIRES_OK(context,
                    context->GetAttr("threshold_vote", &threshold_vote_));
@@ -290,7 +285,7 @@ class HoughvotinggpuOp : public OpKernel {
       compute_target_weight(height, width, top_target, top_weight, bb3Ds, gt, num_gt, num_classes, fx, fy, px, py, outputs);
   }
  private:
-  int is_train_;
+  bool is_train_;
   int kernel_size_;
   float threshold_vote_;
   float threshold_percentage_;
@@ -307,12 +302,7 @@ class HoughvotinggpuOp<Eigen::GpuDevice, T> : public OpKernel {
   explicit HoughvotinggpuOp(OpKernelConstruction* context) : OpKernel(context) 
   {
     // Get the pool height
-    OP_REQUIRES_OK(context,
-                   context->GetAttr("is_train", &is_train_));
     // Check that pooled_height is positive
-    OP_REQUIRES(context, is_train_ >= 0,
-                errors::InvalidArgument("Need is_train >= 0, got ",
-                                        is_train_));
     OP_REQUIRES_OK(context, context->GetAttr("kernel_size", &kernel_size_));
     OP_REQUIRES_OK(context,
                    context->GetAttr("threshold_vote", &threshold_vote_));
@@ -353,6 +343,8 @@ class HoughvotinggpuOp<Eigen::GpuDevice, T> : public OpKernel {
     const Tensor& bottom_cls_loss = context->input(5);
     const float* cls_loss = bottom_cls_loss.flat<float>().data();
 
+    const Tensor& is_train = context->input(6);
+    is_train_ = is_train.flat<bool>().data();
 
     int batch_size = bottom_label.dim_size(0);
     int height = bottom_label.dim_size(1);
@@ -436,7 +428,7 @@ class HoughvotinggpuOp<Eigen::GpuDevice, T> : public OpKernel {
       top_pose_final, top_target_final, top_weight_final, top_domain_final, num_classes, num_rois);
   }
  private:
-  int is_train_;
+  bool is_train_;
   int kernel_size_;
   float threshold_vote_;
   float threshold_percentage_;
@@ -493,7 +485,7 @@ class HoughvotinggpuGradOp : public OpKernel {
 REGISTER_KERNEL_BUILDER(Name("HoughvotinggpuGrad").Device(DEVICE_GPU).TypeConstraint<float>("T"), HoughvotinggpuGradOp<Eigen::GpuDevice, float>);
 
 void hough_voting(const int* labelmap, const float* vertmap, std::vector<std::vector<cv::Point3f>> bb3Ds, 
-  int batch, int height, int width, int num_classes, int is_train,
+  int batch, int height, int width, int num_classes, bool is_train,
   float fx, float fy, float px, float py, std::vector<cv::Vec<float, 14> >& outputs)
 {
   float inlierThreshold = 0.9;
