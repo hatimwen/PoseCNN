@@ -6,13 +6,16 @@ import os
 import numpy as np
 import scipy.io as sio
 import cv2
+import yaml
 
 
 def main():
-    src_folder = "/home/satco/catkin_ws/src/Deep_Object_Pose/data/Static3"
-    dst_folder = "/home/satco/remote_root/mnt/drive_c/datasets/kaju/PoseCNN/data/LOV/data/dope3"
+    with open("generate_dataset/config.yaml", "r") as config:
+        config_dict = yaml.load(config)
+    src_folder = config_dict["dope_src"]
+    dst_folder = config_dict["dope_dst"]
     intrinsic_matrix = get_intrinsic_matrix()
-    for i in range(5407):
+    for i in range(512, 10000):
         if i % 500 == 0:
             print(i)
         try:
@@ -30,6 +33,8 @@ def main():
             except ValueError:
                 print(i)
             objects = dope_meta["objects"]
+            if not objects:
+                continue
             cls_indexes = [1] * len(objects)
             cls_indexes = np.float32(cls_indexes)
             poses = np.empty((3, 4))
@@ -52,7 +57,6 @@ def main():
             cv2.imwrite(dst_path_prefix + "-object.png", img)
             copyfile(src_path_prefix + ".png", dst_path_prefix + "-color.png")
             copyfile(src_path_prefix + ".cs.png", dst_path_prefix + "-label.png")
-            # copyfile(src_path_prefix + ".is.png", dst_path_prefix + "-object.png")
             copyfile(src_path_prefix + ".depth.png", dst_path_prefix + "-depth.png")
 
             centers = np.float32(centers)

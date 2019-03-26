@@ -157,7 +157,7 @@ class Network(object):
         return var
 
     @layer
-    def conv(self, input, k_h, k_w, c_o, s_h, s_w, name, reuse=None, relu=True, padding=DEFAULT_PADDING, group=1, trainable=True, biased=True, c_i=-1):
+    def conv(self, input, k_h, k_w, c_o, s_h, s_w, name, reuse=None, relu=True, padding=DEFAULT_PADDING, group=1, trainable=True, biased=True, c_i=-1, activation="relu"):
         self.validate_padding(padding)
         if isinstance(input, tuple):
             input = input[0]
@@ -183,8 +183,10 @@ class Network(object):
                 init_biases = tf.constant_initializer(0.0)
                 biases = self.make_var('biases', [c_o], init_biases, regularizer, trainable)
                 output = tf.nn.bias_add(output, biases)
-            if relu:
+            if activation == "relu":
                 output = tf.nn.relu(output, name=scope.name)
+            elif activation == "selu":
+                output = tf.nn.selu(output, name=scope.name)
         return output
 
     @layer
@@ -571,10 +573,15 @@ class Network(object):
             return output
 
     @layer
-    def dropout(self, input, keep_prob, name):
+    def dropout(self, input, keep_prob, name, dropout_type="normal"):
         if isinstance(input, tuple):
             input = input[0]
-        return tf.nn.dropout(input, keep_prob, name=name)
+        if dropout_type == "normal":
+            return tf.nn.dropout(input, keep_prob, name=name)
+        elif dropout_type == "alpha":
+            return tf.keras.layers.AlphaDropout(input, keep_prob, name=name)
+        else:
+            return input
 
 
     def make_3d_spatial_filter(self, name, size, channel, theta):
