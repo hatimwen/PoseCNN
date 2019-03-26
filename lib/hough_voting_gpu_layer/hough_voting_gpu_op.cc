@@ -87,7 +87,7 @@ inline void compute_width_height(const int* labelmap, const float* vertmap, cv::
 void HoughVotingLaucher(OpKernelContext* context,
     const int* labelmap, const float* vertmap, const float* extents, const float* meta_data, const float* gt, const float* cls_loss, const int kernel_size,
     const int batch_index, const int batch_size, const int height, const int width, const int num_classes, const int num_gt,
-    const bool is_train, const float inlierThreshold, const int labelThreshold, const float votingThreshold, const float perThreshold,
+    const bool* is_train, const float inlierThreshold, const int labelThreshold, const float votingThreshold, const float perThreshold,
     const int skip_pixels,float* top_box, float* top_pose, float* top_target, float* top_weight, 
     int* top_domain, int* num_rois, const Eigen::GpuDevice& d);
 
@@ -428,7 +428,7 @@ class HoughvotinggpuOp<Eigen::GpuDevice, T> : public OpKernel {
       top_pose_final, top_target_final, top_weight_final, top_domain_final, num_classes, num_rois);
   }
  private:
-  bool is_train_;
+  const bool* is_train_;
   int kernel_size_;
   float threshold_vote_;
   float threshold_percentage_;

@@ -184,7 +184,7 @@ class Network(object):
                 biases = self.make_var('biases', [c_o], init_biases, regularizer, trainable)
                 output = tf.nn.bias_add(output, biases)
             if relu:
-                output = tf.nn.relu(output, name=scope.name)    
+                output = tf.nn.relu(output, name=scope.name)
         return output
 
     @layer

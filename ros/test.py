@@ -214,7 +214,7 @@ def im_segment_single_frame(sess, net, im, im_depth, meta_data, extents, points,
             feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.gt_label_2d: label_blob, net.keep_prob: 1.0}
     else:
         if cfg.TEST.VERTEX_REG_2D or cfg.TEST.VERTEX_REG_3D:
-            feed_dict = {net.data: data_blob, net.gt_label_2d: label_blob, net.keep_prob: 1.0, \
+            feed_dict = {net.data: data_blob, net.gt_label_2d: label_blob, net.keep_prob: 1.0, net.is_train: False, \
                          net.vertex_targets: vertex_target_blob, net.vertex_weights: vertex_weight_blob, \
                          net.meta_data: meta_data_blob, net.extents: extents, net.points: points, net.symmetry: symmetry, net.poses: pose_blob}
         else:

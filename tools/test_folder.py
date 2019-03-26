@@ -9,9 +9,11 @@ import os
 from fcn.config import cfg, cfg_from_file
 import pprint
 import random
+import yaml
 
 
-def prepare_config():
+def setup():
+    cfg_from_file("experiments/cfgs/lov_color_box.yml")
     cfg.GPU_ID = 0
     device_name = '/gpu:{:d}'.format(0)
     print device_name
@@ -25,14 +27,8 @@ def prepare_config():
     cfg.POSE = "data/LOV/poses.txt"
     cfg.BACKGROUND = "data/cache/backgrounds.pkl"
     cfg.IS_TRAIN = False
-
-
-def main():
-    cfg_from_file("experiments/cfgs/lov_color_box.yml")
-    prepare_config()
     print('Using config:')
     pprint.pprint(cfg)
-
     randomize = True
     if not randomize:
         # fix the random seeds (numpy and caffe) for reproducibility
@@ -51,13 +47,21 @@ def main():
     saver = tf.train.Saver()
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.6)
     sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True, gpu_options=gpu_options))
-    # model = "trained_nets/run219/vgg16_fcn_color_single_frame_2d_pose_add_sym_lov_box_iter_397_epoch_7.ckpt"
-    # model = "trained_nets/run170/vgg16_fcn_color_single_frame_2d_pose_add_sym_lov_box_iter_497_epoch_4.ckpt"
-    model = "trained_nets/run275/vgg16_fcn_color_single_frame_2d_pose_add_sym_lov_box_iter_397_epoch_4.ckpt"
-    saver.restore(sess, model)
-    print ('Loading model weights from {:s}').format(model)
 
-    data_folder = "/home/satco/catkin_ws/src/Deep_Object_Pose/data/Static"
+    with open("generate_dataset/config.yaml", "r") as config:
+        config_dict = yaml.load(config)
+
+    model = config_dict["model"]
+    print ('Loading model weights from {:s}').format(model)
+    saver.restore(sess, model)
+
+    return config_dict, sess, network, meta_data, imdb
+
+
+def main():
+    config_dict, sess, network, meta_data, imdb = setup()
+
+    data_folder = config_dict["data_folder"]
 
     for i in range(5):
         j = random.randint(4000, 4999)

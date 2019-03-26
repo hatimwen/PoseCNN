@@ -28,7 +28,7 @@ class vgg16_convs(Network):
             self.data_p = tf.placeholder(tf.float32, shape=[None, None, None, 3])
         self.gt_label_2d = tf.placeholder(tf.int32, shape=[None, None, None])
         self.keep_prob = tf.placeholder(tf.float32)
-        self.is_train = tf.placeholder_with_default(True, shape=())
+        self.is_train = tf.placeholder(tf.bool)
         if self.vertex_reg:
             self.vertex_targets = tf.placeholder(tf.float32, shape=[None, None, None, 3 * num_classes])
             self.vertex_weights = tf.placeholder(tf.float32, shape=[None, None, None, 3 * num_classes])
@@ -59,7 +59,7 @@ class vgg16_convs(Network):
             if self.vertex_reg:
                 q = tf.FIFOQueue(queue_size, [tf.float32, tf.int32, tf.bool, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32, tf.float32])
                 self.enqueue_op = q.enqueue([self.data, self.gt_label_2d, self.is_train, self.keep_prob, self.vertex_targets, self.vertex_weights, self.poses, self.extents, self.meta_data, self.points, self.symmetry])
-                data, gt_label_2d, self.is_train, self.keep_prob_queue, vertex_targets, vertex_weights, poses, extents, meta_data, points, symmetry = q.dequeue()
+                data, gt_label_2d, self.is_train_queue, self.keep_prob_queue, vertex_targets, vertex_weights, poses, extents, meta_data, points, symmetry = q.dequeue()
                 self.layers = dict({'data': data, 'gt_label_2d': gt_label_2d, 'vertex_targets': vertex_targets, 'vertex_weights': vertex_weights,
                                     'poses': poses, 'extents': extents, 'meta_data': meta_data, 'points': points, 'symmetry': symmetry})
             else:
@@ -131,80 +131,97 @@ class vgg16_convs(Network):
              .conv(1, 1, self.num_units, 1, 1, name='score_conv4', c_i=512))
         if dropout_on:
             (self.feed('score_conv4', 'upscore_conv5')
-             .add(name='add_score')
-             .dropout(self.keep_prob_queue, name='dropout')
-             .deconv(int(16 * self.scale), int(16 * self.scale), self.num_units, int(8 * self.scale), int(8 * self.scale), name='upscore', trainable=False))
+                .add(name='add_score')
+                .dropout(self.keep_prob_queue, name='dropout')
+                .deconv(int(16 * self.scale), int(16 * self.scale), self.num_units, int(8 * self.scale), int(8 * self.scale), name='upscore', trainable=False))
 
-            (self.feed('upscore')
-             .conv(1, 1, self.num_classes, 1, 1, name='score', c_i=self.num_units)
-             .log_softmax_high_dimension(self.num_classes, name='prob'))
+        (self.feed('upscore')
+            .conv(1, 1, self.num_classes, 1, 1, name='score', c_i=self.num_units)
+            .log_softmax_high_dimension(self.num_classes, name='prob'))
 
-            (self.feed('score')
-             .softmax_high_dimension(self.num_classes, name='prob_normalized')
-             .argmax_2d(name='label_2d'))
+        (self.feed('score')
+            .softmax_high_dimension(self.num_classes, name='prob_normalized')
+            .argmax_2d(name='label_2d'))
 
-            (self.feed('prob_normalized', 'gt_label_2d')
-             .hard_label(threshold=self.threshold_label, name='gt_label_weight'))
+        (self.feed('prob_normalized', 'gt_label_2d')
+            .hard_label(threshold=self.threshold_label, name='gt_label_weight'))
 
-            if self.vertex_reg:
-                (self.feed('conv5_3')
-                 .conv(1, 1, 128, 1, 1, name='score_conv5_vertex', relu=False, c_i=512)
-                 .deconv(4, 4, 128, 2, 2, name='upscore_conv5_vertex', trainable=False))
+        if self.vertex_reg:
+            (self.feed('conv5_3')
+                .conv(1, 1, 128, 1, 1, name='score_conv5_vertex', relu=False, c_i=512)
+                .deconv(4, 4, 128, 2, 2, name='upscore_conv5_vertex', trainable=False))
 
-                (self.feed('conv4_3')
-                 .conv(1, 1, 128, 1, 1, name='score_conv4_vertex', relu=False, c_i=512))
+            (self.feed('conv4_3')
+                .conv(1, 1, 128, 1, 1, name='score_conv4_vertex', relu=False, c_i=512))
 
+            if dropout_on:
                 (self.feed('score_conv4_vertex', 'upscore_conv5_vertex')
-                 .add(name='add_score_vertex')
-                 .dropout(self.keep_prob_queue, name='dropout_vertex')
-                 .deconv(int(16 * self.scale), int(16 * self.scale), 128, int(8 * self.scale), int(8 * self.scale), name='upscore_vertex', trainable=False)
-                 .conv(1, 1, 3 * self.num_classes, 1, 1, name='vertex_pred', relu=False, c_i=128))
+                    .add(name='add_score_vertex')
+                    .dropout(self.keep_prob_queue, name='dropout_vertex')
+                    .deconv(int(16 * self.scale), int(16 * self.scale), 128, int(8 * self.scale), int(8 * self.scale), name='upscore_vertex', trainable=False)
+                    .conv(1, 1, 3 * self.num_classes, 1, 1, name='vertex_pred', relu=False, c_i=128))
+            else:
+                (self.feed('score_conv4_vertex', 'upscore_conv5_vertex')
+                    .add(name='add_score_vertex')
+                    .deconv(int(16 * self.scale), int(16 * self.scale), 128, int(8 * self.scale), int(8 * self.scale), name='upscore_vertex', trainable=False)
+                    .conv(1, 1, 3 * self.num_classes, 1, 1, name='vertex_pred', relu=False, c_i=128))
 
-                if self.vertex_reg_2d:
-                    from fcn.train import loss_cross_entropy_single_frame
-                    scores = self.get_output('prob')
-                    labels = self.get_output('gt_label_weight')
-                    self.layers['loss_cls'] = loss_cross_entropy_single_frame(scores, labels)
-                    (self.feed('label_2d', 'vertex_pred', 'extents', 'meta_data', 'poses', 'loss_cls')
-                     .hough_voting_gpu(self.is_train, self.kernel_size, self.vote_threshold, self.vote_percentage, self.skip_pixels, name='hough'))
+            if self.vertex_reg_2d:
+                from fcn.train import loss_cross_entropy_single_frame
+                scores = self.get_output('prob')
+                labels = self.get_output('gt_label_weight')
+                self.layers['is_train'] = self.is_train_queue
+                self.layers['loss_cls'] = loss_cross_entropy_single_frame(scores, labels)
+                (self.feed('label_2d', 'vertex_pred', 'extents', 'meta_data', 'poses', 'loss_cls', 'is_train')
+                    .hough_voting_gpu(self.kernel_size, self.vote_threshold, self.vote_percentage, self.skip_pixels, name='hough'))
 
-                    self.layers['rois'] = self.get_output('hough')[0]
-                    self.layers['poses_init'] = self.get_output('hough')[1]
-                    self.layers['poses_target'] = self.get_output('hough')[2]
-                    self.layers['poses_weight'] = self.get_output('hough')[3]
+                self.layers['rois'] = self.get_output('hough')[0]
+                self.layers['poses_init'] = self.get_output('hough')[1]
+                self.layers['poses_target'] = self.get_output('hough')[2]
+                self.layers['poses_weight'] = self.get_output('hough')[3]
 
-                    if self.pose_reg:
-                        # roi pooling without masking
-                        (self.feed('conv5_3', 'rois')
-                         .roi_pool(7, 7, 1.0 / 16.0, 0, name='pool5'))
-                        # .crop_pool_new(16.0, pool_size=7, name='pool5'))
+                if self.pose_reg:
+                    # roi pooling without masking
+                    (self.feed('conv5_3', 'rois')
+                        .roi_pool(7, 7, 1.0 / 16.0, 0, name='pool5'))
+                    # .crop_pool_new(16.0, pool_size=7, name='pool5'))
 
-                        (self.feed('conv4_3', 'rois')
-                         .roi_pool(7, 7, 1.0 / 8.0, 0, name='pool4'))
-                        # .crop_pool_new(8.0, pool_size=7, name='pool4'))
+                    (self.feed('conv4_3', 'rois')
+                        .roi_pool(7, 7, 1.0 / 8.0, 0, name='pool4'))
+                    # .crop_pool_new(8.0, pool_size=7, name='pool4'))
 
+                    if dropout_on:
                         (self.feed('pool5', 'pool4')
-                         .add(name='pool_score')
-                         .fc(4096, height=7, width=7, channel=512, name='fc6')
-                         .dropout(self.keep_prob_queue, name='drop6')
-                         .fc(4096, num_in=4096, name='fc7')
-                         .dropout(self.keep_prob_queue, name='drop7')
-                         .fc(4096, num_in=4096, name='fc8')
-                         .dropout(self.keep_prob_queue, name='drop8')
-                         .fc(4 * self.num_classes, relu=False, name='fc9')
-                         .tanh(name='poses_tanh'))
+                            .add(name='pool_score')
+                            .fc(4096, height=7, width=7, channel=512, name='fc6')
+                            .dropout(self.keep_prob_queue, name='drop6')
+                            .fc(4096, num_in=4096, name='fc7')
+                            .dropout(self.keep_prob_queue, name='drop7')
+                            .fc(4096, num_in=4096, name='fc8')
+                            .dropout(self.keep_prob_queue, name='drop8')
+                            .fc(4 * self.num_classes, relu=False, name='fc9')
+                            .tanh(name='poses_tanh'))
+                    else:
+                        (self.feed('pool5', 'pool4')
+                            .add(name='pool_score')
+                            .fc(4096, height=7, width=7, channel=512, name='fc6')
+                            .fc(4096, num_in=4096, name='fc7')
+                            .fc(4096, num_in=4096, name='fc8')
+                            .fc(4 * self.num_classes, relu=False, name='fc9')
+                            .tanh(name='poses_tanh'))
 
-                        (self.feed('poses_tanh', 'poses_weight')
-                         .multiply(name='poses_mul')
-                         .l2_normalize(dim=1, name='poses_pred'))
+                    (self.feed('poses_tanh', 'poses_weight')
+                        .multiply(name='poses_mul')
+                        .l2_normalize(dim=1, name='poses_pred'))
 
-                        (self.feed('poses_pred', 'poses_target', 'poses_weight', 'points', 'symmetry')
-                         .average_distance_loss(margin=0.01, name='loss_pose'))
+                    (self.feed('poses_pred', 'poses_target', 'poses_weight', 'points', 'symmetry')
+                        .average_distance_loss(margin=0.01, name='loss_pose'))
 
-                        # domain adaptation
-                        if self.adaptation:
-                            self.layers['label_domain'] = self.get_output('hough')[4]
+                    # domain adaptation
+                    if self.adaptation:
+                        self.layers['label_domain'] = self.get_output('hough')[4]
 
+                        if dropout_on:
                             (self.feed('pool_score')
                              .gradient_reversal(0.01, name='greversal')
                              .fc(256, height=7, width=7, channel=512, name='fc9')
@@ -212,80 +229,10 @@ class vgg16_convs(Network):
                              .fc(2, name='domain_score')
                              .softmax(-1, name='domain_prob')
                              .argmax(-1, name='domain_label'))
-        else:
-            (self.feed('score_conv4', 'upscore_conv5')
-             .add(name='add_score')
-             .deconv(int(16 * self.scale), int(16 * self.scale), self.num_units, int(8 * self.scale), int(8 * self.scale), name='upscore', trainable=False))
-
-            (self.feed('upscore')
-             .conv(1, 1, self.num_classes, 1, 1, name='score', c_i=self.num_units)
-             .log_softmax_high_dimension(self.num_classes, name='prob'))
-
-            (self.feed('score')
-             .softmax_high_dimension(self.num_classes, name='prob_normalized')
-             .argmax_2d(name='label_2d'))
-
-            (self.feed('prob_normalized', 'gt_label_2d')
-             .hard_label(threshold=self.threshold_label, name='gt_label_weight'))
-
-            if self.vertex_reg:
-                (self.feed('conv5_3')
-                 .conv(1, 1, 128, 1, 1, name='score_conv5_vertex', relu=False, c_i=512)
-                 .deconv(4, 4, 128, 2, 2, name='upscore_conv5_vertex', trainable=False))
-
-                (self.feed('conv4_3')
-                 .conv(1, 1, 128, 1, 1, name='score_conv4_vertex', relu=False, c_i=512))
-
-                (self.feed('score_conv4_vertex', 'upscore_conv5_vertex')
-                 .add(name='add_score_vertex')
-                 .deconv(int(16 * self.scale), int(16 * self.scale), 128, int(8 * self.scale), int(8 * self.scale), name='upscore_vertex', trainable=False)
-                 .conv(1, 1, 3 * self.num_classes, 1, 1, name='vertex_pred', relu=False, c_i=128))
-
-                if self.vertex_reg_2d:
-                    from fcn.train import loss_cross_entropy_single_frame
-                    scores = self.get_output('prob')
-                    labels = self.get_output('gt_label_weight')
-                    self.layers['loss_cls'] = loss_cross_entropy_single_frame(scores, labels)
-                    (self.feed('label_2d', 'vertex_pred', 'extents', 'meta_data', 'poses', 'loss_cls')
-                     .hough_voting_gpu(self.is_train, self.kernel_size, self.vote_threshold, self.vote_percentage, self.skip_pixels, name='hough'))
-
-                    self.layers['rois'] = self.get_output('hough')[0]
-                    self.layers['poses_init'] = self.get_output('hough')[1]
-                    self.layers['poses_target'] = self.get_output('hough')[2]
-                    self.layers['poses_weight'] = self.get_output('hough')[3]
-
-                    if self.pose_reg:
-                        # roi pooling without masking
-                        (self.feed('conv5_3', 'rois')
-                         .roi_pool(7, 7, 1.0 / 16.0, 0, name='pool5'))
-                        # .crop_pool_new(16.0, pool_size=7, name='pool5'))
-
-                        (self.feed('conv4_3', 'rois')
-                         .roi_pool(7, 7, 1.0 / 8.0, 0, name='pool4'))
-                        # .crop_pool_new(8.0, pool_size=7, name='pool4'))
-
-                        (self.feed('pool5', 'pool4')
-                         .add(name='pool_score')
-                         .fc(4096, height=7, width=7, channel=512, name='fc6')
-                         .fc(4096, num_in=4096, name='fc7')
-                         .fc(4 * self.num_classes, relu=False, name='fc8')
-                         .tanh(name='poses_tanh'))
-
-                        (self.feed('poses_tanh', 'poses_weight')
-                         .multiply(name='poses_mul')
-                         .l2_normalize(dim=1, name='poses_pred'))
-
-                        (self.feed('poses_pred', 'poses_target', 'poses_weight', 'points', 'symmetry')
-                         .average_distance_loss(margin=0.01, name='loss_pose'))
-
-                        # domain adaptation
-                        if self.adaptation:
-                            self.layers['label_domain'] = self.get_output('hough')[4]
-
+                        else:
                             (self.feed('pool_score')
                              .gradient_reversal(0.01, name='greversal')
                              .fc(256, height=7, width=7, channel=512, name='fc9')
                              .fc(2, name='domain_score')
                              .softmax(-1, name='domain_prob')
                              .argmax(-1, name='domain_label'))
-

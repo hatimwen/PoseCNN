@@ -25,6 +25,7 @@ from test import test_ros
 import faulthandler
 from generate_dataset.export_data_from_ros_bag import read_dataset_times
 import matplotlib.pyplot as plt
+from tools.test_folder import setup
 
 def parse_args():
     """
@@ -85,83 +86,42 @@ def parse_args():
 
 
 if __name__ == '__main__':
-    faulthandler.enable()
-    args = parse_args()
+    config_dict, sess, network, meta_data, imdb = setup()
 
-    print('Called with args:')
-    print(args)
-
-    if args.cfg_file is not None:
-        cfg_from_file(args.cfg_file)
-
-    randomize = True
-    if not randomize:
-        # fix the random seeds (numpy and caffe) for reproducibility
-        tf.set_random_seed(cfg.RNG_SEED)
-        np.random.seed(cfg.RNG_SEED)
-
-    print('Using config:')
-    pprint.pprint(cfg)
-
-    imdb = get_imdb(args.imdb_name)
-
-    # construct meta data
-    # K = np.array([[565.2146606445312, 0.0, 316.7839657704098], [0.0, 527.93408203125, 259.8812293402443], [0.0, 0.0, 1.0]])
-    K = np.array([[610.55994, 0, 306.86169], [0, 610.32086, 240.94547], [0, 0, 1]])
-    meta_data = dict({'intrinsic_matrix': K, 'factor_depth': 10000.0})
-    print meta_data
-
-    cfg.GPU_ID = args.gpu_id
-    device_name = '/gpu:{:d}'.format(args.gpu_id)
-    print device_name
-
-    cfg.TRAIN.NUM_STEPS = 1
-    cfg.TRAIN.GRID_SIZE = cfg.TEST.GRID_SIZE
-    if cfg.NETWORK == 'FCN8VGG':
-        path = osp.abspath(osp.join(cfg.ROOT_DIR, args.pretrained_model))
-        cfg.TRAIN.MODEL_PATH = path
-    cfg.TRAIN.TRAINABLE = False
-
-    cfg.RIG = args.rig_name
-    cfg.CAD = args.cad_name
-    cfg.POSE = args.pose_name
-    cfg.BACKGROUND = args.background_name
-    cfg.IS_TRAIN = False
-
-    from networks.factory import get_network
-    network = get_network(args.network_name)
-    print 'Use network `{:s}` in training'.format(args.network_name)
-
-    # start a session
-    saver = tf.train.Saver()
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.6)
-    sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True, gpu_options=gpu_options))
-    saver.restore(sess, args.model)
-    print ('Loading model weights from {:s}').format(args.model)
+    bag_path = os.path.join(config_dict["bags_path"], config_dict["test_bag"] + ".bag")
 
     # ros bag
-    bag = rosbag.Bag(args.bag_name)
+    bag = rosbag.Bag(bag_path)
     cv_bridge = CvBridge()
 
     count = 0
     count_inner = 0
-    dataset_name = os.path.split(args.bag_name)[1][:-4]
+    dataset_name = config_dict["test_bag"]
 
     topics = bag.get_type_and_topic_info().topics
 
     rgb = None
     depth = None
 
-    start_time, end_time, times = read_dataset_times(dataset_name, "generate_dataset/")
-    for topic, msg, t in bag.read_messages(topics=[args.color_topic, args.depth_topic], start_time=start_time, end_time=end_time):
+    skip_frames = config_dict["skip_frames"]
+
+    color_topic = "/camera/color/image_raw"
+    depth_topic = "/camera/aligned_depth_to_color/image_raw"
+
+    try:
+        start_time, end_time, times = read_dataset_times(dataset_name, "generate_dataset/")
+    except IOError:
+        start_time = rospy.Time(bag.get_start_time())
+        end_time = rospy.Time(bag.get_end_time())
+    for topic, msg, t in bag.read_messages(topics=[color_topic, depth_topic], start_time=start_time, end_time=end_time):
         print count, topic, type(msg)
-        if topic == args.color_topic:
+        if topic == color_topic:
             rgb = msg
-        if args.depth_topic in topics:
-            if topic == args.depth_topic:
+        if depth_topic in topics:
+            if topic == depth_topic:
                 depth = msg
 
-        if count % 30 == 0 or (count - 1) % 30 == 0:
+        if count % skip_frames == 0 or (count - 1) % skip_frames == 0:
             count_inner += 1
             if count_inner % 2 == 0:
                 try:

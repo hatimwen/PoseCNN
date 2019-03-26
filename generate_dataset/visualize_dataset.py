@@ -8,10 +8,7 @@ def main():
     with open("config.yaml", "r") as config:
         config_dict = yaml.load(config)
     base_path = config_dict["images_path"]
-    lov_path = config_dict["lov_path"]
-    print(lov_path)
-    # trainlist = open(os.path.join(lov_path, "000_box_train.txt"), "r")
-    dataset = "dataset1.6"
+    dataset = config_dict["vis_dataset"]
     dataset_path = os.path.join(base_path, dataset)
     print("Visualizing dataset: {}".format(dataset_path))
     trainlist = sorted(os.listdir(dataset_path))

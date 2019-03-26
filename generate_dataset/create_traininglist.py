@@ -1,6 +1,7 @@
 from common import get_filename_prefix
 import os
 import random
+import yaml
 
 
 def color_and_depth_exist(folder_path, folder, prefix):
@@ -43,12 +44,9 @@ def split_list(list_a, ratio, randomize=False):
 
 def main():
     folder_path = "/home/satco/kaju/data/LOV/data"
-    # folders = os.listdir(folder_path)
-    # folders.remove("dataset1.1")
-    # folders = ["dataset1.3", "dataset2.3", "dataset2.4"]
-    folders = ["dataset1.6", "dataset2.6", "dataset3.6", "dataset4.6", "dataset5.6", "dataset6.6"]
-    # folders = ["dataset2.6"] #, "dataset3.6", "dataset4.6", "dataset5.6", "dataset6.6"]
-    # folders = ["dataset6.6"]
+    with open("config.yaml", "r") as config:
+        config_dict = yaml.load(config)
+    folders = config_dict["datasets"]
 
     # Split data in 0.8/0.2 trainval and test and then split trainval into 0.8/0.2 train and val
     trainval_to_test_ratio = 0.8
