@@ -167,7 +167,10 @@ class Network(object):
         assert c_o%group==0
         convolve = lambda i, k: tf.nn.conv2d(i, k, [1, s_h, s_w, 1], padding=padding)
         with tf.variable_scope(name, reuse=reuse) as scope:
-            init_weights = tf.truncated_normal_initializer(0.0, stddev=0.001)
+            if activation == "relu":
+                init_weights = tf.truncated_normal_initializer(0.0, stddev=0.001)
+            elif activation == "selu":
+                init_weights = tf.variance_scaling_initializer(scale=1.0, mode='fan_in')
             regularizer = tf.contrib.layers.l2_regularizer(scale=cfg.TRAIN.WEIGHT_REG)
             kernel = self.make_var('weights', [k_h, k_w, c_i/group, c_o], init_weights, regularizer, trainable)
 
@@ -190,20 +193,26 @@ class Network(object):
         return output
 
     @layer
-    def conv3d(self, input, k_d, k_h, k_w, c_i, c_o, s_d, s_h, s_w, name, reuse=None, relu=True, padding=DEFAULT_PADDING, trainable=True):
+    def conv3d(self, input, k_d, k_h, k_w, c_i, c_o, s_d, s_h, s_w, name, reuse=None, relu=True, padding=DEFAULT_PADDING, trainable=True, activation="relu"):
         self.validate_padding(padding)
         if isinstance(input, tuple):
             input = input[0]
         with tf.variable_scope(name, reuse=reuse) as scope:
-            init_weights = tf.truncated_normal_initializer(0.0, stddev=0.001)
+            if activation == "relu":
+                init_weights = tf.truncated_normal_initializer(0.0, stddev=0.001)
+            else:
+                init_weights = tf.variance_scaling_initializer(scale=1.0, mode='fan_in')
             init_biases = tf.constant_initializer(0.0)
             regularizer = tf.contrib.layers.l2_regularizer(scale=cfg.TRAIN.WEIGHT_REG)
             kernel = self.make_var('weights', [k_d, k_h, k_w, c_i, c_o], init_weights, regularizer, trainable)
             biases = self.make_var('biases', [c_o], init_biases, regularizer, trainable)
             conv = tf.nn.conv3d(input, kernel, [1, s_d, s_h, s_w, 1], padding=padding)
-            if relu:
+            if activation == "relu":
                 bias = tf.nn.bias_add(conv, biases)
                 return tf.nn.relu(bias, name=scope.name)
+            elif activation == "selu":
+                bias = tf.nn.bias_add(conv, biases)
+                return tf.nn.selu(bias, name=scope.name)
             return tf.nn.bias_add(conv, biases, name=scope.name)
 
     @layer
@@ -392,7 +401,7 @@ class Network(object):
         return tf.nn.l2_normalize(input, dim, name=name)
 
     @layer
-    def fc(self, input, num_out, name, num_in=-1, height=-1, width=-1, channel=-1, reuse=None, relu=True, trainable=True):
+    def fc(self, input, num_out, name, num_in=-1, height=-1, width=-1, channel=-1, reuse=None, relu=True, trainable=True, activation="relu"):
         with tf.variable_scope(name, reuse=reuse) as scope:
             # only use the first input
             if isinstance(input, tuple):
@@ -414,13 +423,24 @@ class Network(object):
                 else:
                     feed_in, dim = (input, int(num_in))
 
-            init_weights = tf.truncated_normal_initializer(0.0, stddev=0.001)
+            if activation == "relu":
+                init_weights = tf.truncated_normal_initializer(0.0, stddev=0.001)
+            else:
+                init_weights = tf.variance_scaling_initializer(scale=1.0, mode='fan_in')
             init_biases = tf.constant_initializer(0.0)
             regularizer = tf.contrib.layers.l2_regularizer(scale=cfg.TRAIN.WEIGHT_REG)
             weights = self.make_var('weights', [dim, num_out], init_weights, regularizer, trainable)
             biases = self.make_var('biases', [num_out], init_biases, regularizer, trainable)
-            op = tf.nn.relu_layer if relu else tf.nn.xw_plus_b
-            fc = op(feed_in, weights, biases, name=scope.name)
+            if not relu:
+                op = tf.nn.xw_plus_b
+                fc = op(feed_in, weights, biases, name=scope.name)
+            else:
+                if activation == "relu":
+                    op = tf.nn.relu_layer
+                    fc = op(feed_in, weights, biases, name=scope.name)
+                elif activation == "selu":
+                    op = tf.contrib.layers.fully_connected
+                    fc = op(feed_in, weights, biases, name=scope.name, activation_fn=tf.nn.selu)
             return fc
 
     @layer
