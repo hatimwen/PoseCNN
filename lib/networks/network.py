@@ -186,7 +186,7 @@ class Network(object):
                 init_biases = tf.constant_initializer(0.0)
                 biases = self.make_var('biases', [c_o], init_biases, regularizer, trainable)
                 output = tf.nn.bias_add(output, biases)
-            if activation == "relu":
+            if activation == "relu" and relu:
                 output = tf.nn.relu(output, name=scope.name)
             elif activation == "selu":
                 output = tf.nn.selu(output, name=scope.name)
@@ -207,7 +207,7 @@ class Network(object):
             kernel = self.make_var('weights', [k_d, k_h, k_w, c_i, c_o], init_weights, regularizer, trainable)
             biases = self.make_var('biases', [c_o], init_biases, regularizer, trainable)
             conv = tf.nn.conv3d(input, kernel, [1, s_d, s_h, s_w, 1], padding=padding)
-            if activation == "relu":
+            if activation == "relu" and relu:
                 bias = tf.nn.bias_add(conv, biases)
                 return tf.nn.relu(bias, name=scope.name)
             elif activation == "selu":

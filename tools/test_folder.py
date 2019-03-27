@@ -62,9 +62,11 @@ def main():
     config_dict, sess, network, meta_data, imdb = setup()
 
     data_folder = config_dict["data_folder"]
+    start = config_dict["start"]
+    end = config_dict["end"]
 
     for i in range(5):
-        j = random.randint(4000, 4999)
+        j = random.randint(start, end)
         prefix = get_filename_prefix(j)
         im = cv2.imread(os.path.join(data_folder, prefix + ".png"))
         depth_cv = cv2.imread(os.path.join(data_folder, prefix + ".depth.png"), cv2.IMREAD_ANYDEPTH)
