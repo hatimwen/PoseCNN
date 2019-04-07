@@ -12,7 +12,7 @@ from transforms3d.quaternions import quat2mat
 import matplotlib.pyplot as plt
 import timeit
 import tensorflow as tf
-from fcn.train import smooth_l1_loss_vertex
+from tools.common import smooth_l1_loss_vertex
 
 
 def test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count):
@@ -132,6 +132,18 @@ def get_image_blob(im, im_depth, meta_data, cfg):
     return blob, blob_depth, blob_normal, np.array(im_scale_factors), height, width
 
 
+def combine_poses(data, rois, poses_init, poses_pred, probs, vertex_pred, labels_2d):
+    data = data[0, :, :, :]
+    # combine poses
+    num = rois.shape[0]
+    poses = poses_init
+    for i in xrange(num):
+        class_id = int(rois[i, 1])
+        if class_id >= 0:
+            poses[i, :4] = poses_pred[i, 4 * class_id:4 * class_id + 4]
+    vertex_pred = vertex_pred[0, :, :, :]
+    return data, labels_2d[0, :, :].astype(np.int32), probs[0, :, :, :], vertex_pred, rois, poses
+
 def get_data(sess, net, losses, output_dir, current_iter):
     loss = losses["loss"]
     loss_cls = losses["cls"]
@@ -143,12 +155,11 @@ def get_data(sess, net, losses, output_dir, current_iter):
     loss_vertex_op = tf.summary.scalar('loss_vertex', tf.squeeze(loss_vertex))
     loss_pose_op = tf.summary.scalar('loss_pose', tf.squeeze(loss_pose))
 
-    conv, labels_2d, probs, vertex_pred, rois, poses_init, pool_score, pool5, pool4, poses_pred, poses_pred2, loss_summary, loss_cls_summary, \
+    data, labels_2d, probs, vertex_pred, rois, poses_init, pool_score, pool5, pool4, poses_pred, poses_pred2, loss_summary, loss_cls_summary, \
     loss_vertex_summary, loss_pose_summary, loss_value, loss_cls_value, loss_vertex_value, loss_pose_value = \
-        sess.run([net.get_output("conv1_1"), net.get_output('label_2d'), net.get_output('prob_normalized'), net.get_output('vertex_pred'), \
+        sess.run([net.get_output("data"), net.get_output('label_2d'), net.get_output('prob_normalized'), net.get_output('vertex_pred'), \
                   net.get_output('rois'), net.get_output('poses_init'), net.get_output("pool_score"), net.get_output("pool5"), net.get_output("pool4"),
                   net.get_output('poses_tanh'), net.get_output("poses_pred"), loss_op, loss_cls_op, loss_vertex_op, loss_pose_op, loss, loss_cls, loss_vertex, loss_pose])
-    # print(conv)
     train_writer = tf.summary.FileWriter(output_dir + "/test", sess.graph)
     print("Loss: ", loss_value[0])
     print("Cls: ", loss_cls_value)
@@ -160,15 +171,7 @@ def get_data(sess, net, losses, output_dir, current_iter):
     train_writer.add_summary(loss_vertex_summary, current_iter)
     train_writer.add_summary(loss_pose_summary, current_iter)
 
-    # combine poses
-    num = rois.shape[0]
-    poses = poses_init
-    for i in xrange(num):
-        class_id = int(rois[i, 1])
-        if class_id >= 0:
-            poses[i, :4] = poses_pred[i, 4 * class_id:4 * class_id + 4]
-    vertex_pred = vertex_pred[0, :, :, :]
-    return labels_2d[0,:,:].astype(np.int32), probs[0,:,:,:], vertex_pred, rois, poses
+    return combine_poses(data, rois, poses_init, poses_pred, probs, vertex_pred, labels_2d)
 
 
 def im_segment_single_frame(sess, net, im_blob, im_depth_blob, im_normal_blob, meta_data, extents, points, symmetry, num_classes, cfg, output_dir, i, depth_blob, label_blob, meta_data_blob, vertex_target_blob, vertex_weight_blob, pose_blob, gt_boxes):

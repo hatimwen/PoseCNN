@@ -16,11 +16,13 @@ import numpy as np
 import os
 import tensorflow as tf
 from tensorflow.python.framework.errors_impl import NotFoundError
-from tensorflow.python import debug as tf_debug
-import sys
 import threading
-import math
-import clr
+from ros.test import combine_poses
+from tools.common import smooth_l1_loss_vertex
+from fcn.test import _extract_vertmap, plot_data
+from generate_dataset.common import get_intrinsic_matrix
+import io
+import matplotlib.pyplot as plt
 
 
 class Coordinator:
@@ -211,7 +213,7 @@ class SolverWrapper(object):
         coord.request_stop()
         coord.join([t])
 
-    def train_model_vertex_pose(self, sess, train_op, loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate, iters_train, iters_val, data_layer):
+    def train_model_vertex_pose(self, sess, train_op, loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate, iters_train, iters_val, data_layer, imdb):
         """Network training loop."""
         # add summary
         loss_op = tf.summary.scalar('loss', tf.squeeze(loss))
@@ -253,6 +255,7 @@ class SolverWrapper(object):
         last_snapshot_iter = -1
         timer = Timer()
         epochs = 5
+        intrinsic_matrix = get_intrinsic_matrix()
         for epoch in range(epochs):
             coord_train.run = True
             coord_val.run = True
@@ -295,15 +298,34 @@ class SolverWrapper(object):
             losses_vertex_val = []
             losses_pose_val = []
 
+            visualize_n_per_validation = 10
+
             for iter_val in range(iters_val):
 
                 timer.tic()
-                # loss_val = val_dict['loss_val']
-                # loss_cls_val = val_dict['loss_cls_val']
-                # loss_vertex_val = val_dict['loss_vertex_val']
-                # loss_pose_val = val_dict['lose_pose_val']
-                loss_value, loss_cls_value, loss_vertex_value, loss_pose_value, loss_regu_value, lr = sess.run(
-                    [loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate])
+                if iter_val % (iters_val / visualize_n_per_validation) == 0:
+                    data, labels_2d, probs, vertex_pred, rois, poses_init, pool_score, pool5, pool4, poses_pred, poses_pred2, loss_value, loss_cls_value, loss_vertex_value, loss_pose_value = \
+                        sess.run([self.net.get_output('data'), self.net.get_output('label_2d'), self.net.get_output('prob_normalized'), self.net.get_output('vertex_pred'), \
+                          self.net.get_output('rois'), self.net.get_output('poses_init'), self.net.get_output("pool_score"), self.net.get_output("pool5"), self.net.get_output("pool4"),
+                          self.net.get_output('poses_tanh'), self.net.get_output("poses_pred"), loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate])
+                    data, labels, probs, vertex_pred, rois, poses = combine_poses(data, rois, poses_init, poses_pred, probs, vertex_pred, labels_2d)
+                    im_label = imdb.labels_to_image(data, labels)
+                    vertmap = _extract_vertmap(labels, vertex_pred, imdb._extents, imdb.num_classes)
+                    plot_data(data, None, im_label, imdb._class_colors, vertmap, labels, rois, poses, [], intrinsic_matrix, imdb.num_classes, imdb._classes, imdb._points_all)
+                    # more details at: https://stackoverflow.com/questions/38543850/tensorflow-how-to-display-custom-images-in-tensorboard-e-g-matplotlib-plots
+                    buf = io.BytesIO()
+                    plt.savefig(buf, format='png')
+                    buf.seek(0)
+                    image = tf.image.decode_png(buf.getvalue(), channels=4)
+                    # Add the batch dimension
+                    image = tf.expand_dims(image, 0)
+
+                    # Add image summary
+                    img_summary_op = tf.summary.image("Val predictions", image)
+                    current_iter = iters_train * (epoch + 1) + iter_val
+                    val_writer.add_summary(img_summary_op, current_iter)
+                else:
+                    loss_value, loss_cls_value, loss_vertex_value, loss_pose_value, loss_regu_value, lr = sess.run([loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate])
                 losses_val.append(loss_value)
                 losses_cls_val.append(loss_cls_value)
                 losses_vertex_val.append(loss_vertex_value)
@@ -742,24 +764,12 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
                     sw.train_model_vertex_pose_adapt(sess, train_op, loss, loss_cls, loss_vertex, loss_pose, \
                                                      loss_domain, label_domain, domain_label, learning_rate, iters_train, data_layer)
                 else:
-                    sw.train_model_vertex_pose(sess, train_op, loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate, iters_train, iters_val, data_layer)
+                    sw.train_model_vertex_pose(sess, train_op, loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate, iters_train, iters_val, data_layer, imdb)
             else:
                 sw.train_model_vertex(sess, train_op, loss, loss_cls, loss_vertex, loss_regu, learning_rate, iters_train, data_layer)
         else:
             sw.train_model(sess, train_op, loss, learning_rate, iters_train, data_layer)
         print 'done solving'
-
-
-def smooth_l1_loss_vertex(vertex_pred, vertex_targets, vertex_weights, sigma=1.0):
-    sigma_2 = sigma ** 2
-    vertex_diff = vertex_pred - vertex_targets
-    diff = tf.multiply(vertex_weights, vertex_diff)
-    abs_diff = tf.abs(diff)
-    smoothL1_sign = tf.stop_gradient(tf.to_float(tf.less(abs_diff, 1. / sigma_2)))
-    in_loss = tf.pow(diff, 2) * (sigma_2 / 2.) * smoothL1_sign \
-              + (abs_diff - (0.5 / sigma_2)) * (1. - smoothL1_sign)
-    loss = tf.div(tf.reduce_sum(in_loss), tf.reduce_sum(vertex_weights) + 1e-10)
-    return loss
 
 
 def smooth_l1_loss(bbox_pred, bbox_targets, bbox_inside_weights, bbox_outside_weights, sigma=1.0, dim=[1]):

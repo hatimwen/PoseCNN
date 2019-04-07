@@ -244,19 +244,19 @@ def main():
             read_label_data(src_path_prefix, meta_data['intrinsic_matrix'], 2, [1], imdb._extents, height, width)
         # run network
         start_time = timeit.default_timer()
-        _vis_minibatch(im_blob, im_depth_blob, depth_blob, label_blob, meta_data_blob, vertex_target_blob, pose_blob, imdb._extents, imdb._points_all, imdb._class_colors)
-        labels, probs, vertex_pred, rois, poses = im_segment_single_frame(sess, network, im_blob, im_depth_blob, im_normal_blob, meta_data, imdb._extents, imdb._points_all, imdb._symmetry, imdb.num_classes,
+        # _vis_minibatch(im_blob, im_depth_blob, depth_blob, label_blob, meta_data_blob, vertex_target_blob, pose_blob, imdb._extents, imdb._points_all, imdb._class_colors)
+        data, labels, probs, vertex_pred, rois, poses = im_segment_single_frame(sess, network, im_blob, im_depth_blob, im_normal_blob, meta_data, imdb._extents, imdb._points_all, imdb._symmetry, imdb.num_classes,
                                                                           cfg, output_dir, i, depth_blob, label_blob, meta_data_blob, vertex_target_blob, vertex_weight_blob, pose_blob, gt_boxes)
         elapsed = timeit.default_timer() - start_time
         print("ELAPSED TIME:")
         print(elapsed)
         poses_icp = []
 
-        im_label = imdb.labels_to_image(im, labels)
+        im_label = imdb.labels_to_image(data, labels)
 
         if cfg.TEST.VISUALIZE:
             vertmap = _extract_vertmap(labels, vertex_pred, imdb._extents, imdb.num_classes)
-            vis_segmentations_vertmaps_detection(im, depth_cv, im_label, imdb._class_colors, vertmap, labels, rois, poses, poses_icp, meta_data['intrinsic_matrix'],
+            vis_segmentations_vertmaps_detection(data, depth_cv, im_label, imdb._class_colors, vertmap, labels, rois, poses, poses_icp, meta_data['intrinsic_matrix'],
                                                  imdb.num_classes, imdb._classes, imdb._points_all)
 
 

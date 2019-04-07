@@ -31,7 +31,8 @@ def get_filename_prefix(counter):
 
 
 def get_intrinsic_matrix():
-    return np.float32([[610.55992534, 0, 306.86169342], [0, 610.32086262, 240.94547232], [0, 0, 1]])
+    # return np.float32([[610.55992534, 0, 306.86169342], [0, 610.32086262, 240.94547232], [0, 0, 1]])
+    return np.float32([[610., 0, 306.], [0, 610., 240.], [0, 0, 1]])
 
 
 # excpects quat in xyzw form
