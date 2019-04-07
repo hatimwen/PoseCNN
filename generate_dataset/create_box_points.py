@@ -38,7 +38,8 @@ def write_points3(a, b, c, fout):
             fout.write("{} {} {}\n".format(first / 1000.0, second / 1000.0, fixed / 1000.0))
 
 
-with open("/home/satco/kaju/PoseCNN/data/LOV/models/000_box/points.xyz", "w") as fout:
+with open("/home/satco/kaju/data/LOV/models/000_box/points.xyz", "w") as fout:
+# with open("/home/satco/PycharmProjects/PoseCNN/data/LOV/models/000_box/points.xyz", "w") as fout:
     # fout.write(str(528) + "\n")
     # fout.write("Test\n")
     write_points(length, width, height, fout)

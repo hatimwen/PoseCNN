@@ -49,7 +49,6 @@ class SolverWrapper(object):
         """Take a snapshot of the network after unnormalizing the learned
         bounding-box regression weights. This enables easy use at test-time.
         """
-        net = self.net
 
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
@@ -650,7 +649,6 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
     """Train a Fast R-CNN network."""
 
     loss_regu = tf.add_n(tf.losses.get_regularization_losses(), 'regu')
-    loss_regu_val = tf.add_n(tf.losses.get_regularization_losses(), 'regu2')
     if cfg.TRAIN.SINGLE_FRAME:
         # classification loss
         if cfg.NETWORK == 'FCN8VGG':
@@ -659,9 +657,6 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
             loss = loss_cross_entropy_single_frame(scores, labels) + loss_regu
         else:
             if cfg.TRAIN.VERTEX_REG_2D or cfg.TRAIN.VERTEX_REG_3D:
-                scores = network.get_output('prob')
-                labels = network.get_output('gt_label_weight')
-
                 # labels_val = network.get_output2('gt_label_weight')
                 loss_cls = network.get_output('loss_cls')
                 # loss_cls_val = loss_cross_entropy_single_frame(scores_val, labels_val)

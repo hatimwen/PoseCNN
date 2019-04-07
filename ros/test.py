@@ -11,6 +11,8 @@ from sensor_msgs.msg import Image
 from transforms3d.quaternions import quat2mat
 import matplotlib.pyplot as plt
 import timeit
+import tensorflow as tf
+from fcn.train import smooth_l1_loss_vertex
 
 
 def test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count):
@@ -40,7 +42,7 @@ def test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count):
 
     # run network
     start_time = timeit.default_timer()
-    labels, probs, vertex_pred, rois, poses = im_segment_single_frame(sess, network, im, depth_cv, meta_data, \
+    labels, probs, vertex_pred, rois, poses, poses_gt = im_segment_single_frame(sess, network, im, depth_cv, meta_data, \
             imdb._extents, imdb._points_all, imdb._symmetry, imdb.num_classes, cfg)
     elapsed = timeit.default_timer() - start_time
     print("ELAPSED TIME:")
@@ -56,7 +58,7 @@ def test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count):
         #             imdb.num_classes, imdb._points_all, cfg)
         vis_segmentations_vertmaps_detection(im, depth_cv, im_label, imdb._class_colors, \
                                    vertmap, labels, rois, poses, poses_icp, meta_data['intrinsic_matrix'], \
-                                   imdb.num_classes, imdb._classes, imdb._points_all)
+                                   imdb.num_classes, imdb._classes, imdb._points_all, poses_gt)
 
 
 def get_image_blob(im, im_depth, meta_data, cfg):
@@ -84,6 +86,8 @@ def get_image_blob(im, im_depth, meta_data, cfg):
     processed_ims.append(im)
     # Create a blob to hold the input images
     blob = im_list_to_blob(processed_ims, 3)
+    height = processed_ims[0].shape[0]
+    width = processed_ims[0].shape[1]
 
     # depth
     if im_depth is not None:
@@ -125,21 +129,36 @@ def get_image_blob(im, im_depth, meta_data, cfg):
     else:
         blob_normal = []
         
-    return blob, blob_depth, blob_normal, np.array(im_scale_factors)
+    return blob, blob_depth, blob_normal, np.array(im_scale_factors), height, width
 
 
-def get_data(sess, net):
+def get_data(sess, net, losses, output_dir, current_iter):
+    loss = losses["loss"]
+    loss_cls = losses["cls"]
+    loss_vertex = losses["vertex"]
+    loss_pose = losses["pose"]
 
-    labels_2d, probs, vertex_pred, rois, poses_init, pool_score, pool5, pool4, poses_pred, poses_pred2 = \
-        sess.run([net.get_output('label_2d'), net.get_output('prob_normalized'), net.get_output('vertex_pred'), \
-                  net.get_output('rois'), net.get_output('poses_init'), net.get_output("pool_score"), net.get_output("pool5"), net.get_output("pool4"), net.get_output('poses_tanh'), net.get_output("poses_pred")])
-    # non-maximum suppression
-    # keep = nms(rois, 0.5)
-    # rois = rois[keep, :]
-    # poses_init = poses_init[keep, :]
-    # poses_pred = poses_pred[keep, :]
-    print rois
-    print(poses_pred)
+    loss_op = tf.summary.scalar('loss', tf.squeeze(loss))
+    loss_cls_op = tf.summary.scalar('loss_cls', tf.squeeze(loss_cls))
+    loss_vertex_op = tf.summary.scalar('loss_vertex', tf.squeeze(loss_vertex))
+    loss_pose_op = tf.summary.scalar('loss_pose', tf.squeeze(loss_pose))
+
+    conv, labels_2d, probs, vertex_pred, rois, poses_init, pool_score, pool5, pool4, poses_pred, poses_pred2, loss_summary, loss_cls_summary, \
+    loss_vertex_summary, loss_pose_summary, loss_value, loss_cls_value, loss_vertex_value, loss_pose_value = \
+        sess.run([net.get_output("conv1_1"), net.get_output('label_2d'), net.get_output('prob_normalized'), net.get_output('vertex_pred'), \
+                  net.get_output('rois'), net.get_output('poses_init'), net.get_output("pool_score"), net.get_output("pool5"), net.get_output("pool4"),
+                  net.get_output('poses_tanh'), net.get_output("poses_pred"), loss_op, loss_cls_op, loss_vertex_op, loss_pose_op, loss, loss_cls, loss_vertex, loss_pose])
+    # print(conv)
+    train_writer = tf.summary.FileWriter(output_dir + "/test", sess.graph)
+    print("Loss: ", loss_value[0])
+    print("Cls: ", loss_cls_value)
+    print("Vertex: ", loss_vertex_value)
+    print("Pose: ", loss_pose_value[0])
+
+    train_writer.add_summary(loss_summary, current_iter)
+    train_writer.add_summary(loss_cls_summary, current_iter)
+    train_writer.add_summary(loss_vertex_summary, current_iter)
+    train_writer.add_summary(loss_pose_summary, current_iter)
 
     # combine poses
     num = rois.shape[0]
@@ -152,47 +171,33 @@ def get_data(sess, net):
     return labels_2d[0,:,:].astype(np.int32), probs[0,:,:,:], vertex_pred, rois, poses
 
 
-def get_plt_buffer(sess, net):
-    labels, probs, vertex_pred, rois, poses = get_data(sess, net)
-    from fcn.test import plot_data
-    plot_data(labels, probs, vertex_pred, rois, poses)
-
-
-def im_segment_single_frame(sess, net, im, im_depth, meta_data, extents, points, symmetry, num_classes, cfg):
+def im_segment_single_frame(sess, net, im_blob, im_depth_blob, im_normal_blob, meta_data, extents, points, symmetry, num_classes, cfg, output_dir, i, depth_blob, label_blob, meta_data_blob, vertex_target_blob, vertex_weight_blob, pose_blob, gt_boxes):
     """segment image
     """
 
-    # compute image blob
-    im_blob, im_depth_blob, im_normal_blob, im_scale_factors = get_image_blob(im, im_depth, meta_data, cfg)
-    im_scale = im_scale_factors[0]
+    loss_regu = tf.add_n(tf.losses.get_regularization_losses(), 'regu')
 
-    # construct the meta data
-    K = np.matrix(meta_data['intrinsic_matrix']) * im_scale
-    K[2, 2] = 1
-    Kinv = np.linalg.pinv(K)
-    mdata = np.zeros(48, dtype=np.float32)
-    mdata[0:9] = K.flatten()
-    mdata[9:18] = Kinv.flatten()
-    # mdata[18:30] = pose_world2live.flatten()
-    # mdata[30:42] = pose_live2world.flatten()
-    meta_data_blob = np.zeros((1, 1, 1, 48), dtype=np.float32)
-    meta_data_blob[0,0,0,:] = mdata
+    loss_cls = net.get_output('loss_cls')
 
-    # use a fake label blob of ones
-    if im_depth is not None:
-        img_for_shape = im_depth
-    else:
-        img_for_shape = im
+    vertex_pred = net.get_output('vertex_pred')
 
-    height = int(img_for_shape.shape[0] * im_scale)
-    width = int(img_for_shape.shape[1] * im_scale)
-    print(height)
-    print(width)
-    label_blob = np.ones((1, height, width), dtype=np.int32)
+    vertex_targets = net.get_output('vertex_targets')
 
-    pose_blob = np.zeros((1, 13), dtype=np.float32)
-    vertex_target_blob = np.zeros((1, height, width, 3*num_classes), dtype=np.float32)
-    vertex_weight_blob = np.zeros((1, height, width, 3*num_classes), dtype=np.float32)
+    vertex_weights = net.get_output('vertex_weights')
+
+    loss_vertex = 3 * smooth_l1_loss_vertex(vertex_pred, vertex_targets, vertex_weights)
+
+    loss_pose = net.get_output('loss_pose')[0]
+
+    loss = loss_cls + loss_vertex + loss_pose + loss_regu
+
+    losses = {
+        "regu": loss_regu,
+        "cls": loss_cls,
+        "vertex": loss_vertex,
+        "pose": loss_pose,
+        "loss": loss
+    }
 
     # forward pass
     if cfg.INPUT == 'RGBD':
@@ -205,26 +210,29 @@ def im_segment_single_frame(sess, net, im, im_depth, meta_data, extents, points,
     elif cfg.INPUT == 'NORMAL':
         data_blob = im_normal_blob
 
+    keep_prob = 1.0
+    is_train = False
+
     if cfg.INPUT == 'RGBD':
         if cfg.TEST.VERTEX_REG_2D or cfg.TEST.VERTEX_REG_3D:
-            feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.gt_label_2d: label_blob, net.keep_prob: 1.0, \
+            feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.gt_label_2d: label_blob, net.keep_prob: keep_prob, \
                          net.vertex_targets: vertex_target_blob, net.vertex_weights: vertex_weight_blob, \
                          net.meta_data: meta_data_blob, net.extents: extents, net.points: points, net.poses: pose_blob}
         else:
-            feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.gt_label_2d: label_blob, net.keep_prob: 1.0}
+            feed_dict = {net.data: data_blob, net.data_p: data_p_blob, net.gt_label_2d: label_blob, net.keep_prob: keep_prob}
     else:
         if cfg.TEST.VERTEX_REG_2D or cfg.TEST.VERTEX_REG_3D:
-            feed_dict = {net.data: data_blob, net.gt_label_2d: label_blob, net.keep_prob: 1.0, net.is_train: False, \
+            feed_dict = {net.data: data_blob, net.gt_label_2d: label_blob, net.keep_prob: keep_prob, net.is_train: is_train, \
                          net.vertex_targets: vertex_target_blob, net.vertex_weights: vertex_weight_blob, \
                          net.meta_data: meta_data_blob, net.extents: extents, net.points: points, net.symmetry: symmetry, net.poses: pose_blob}
         else:
-            feed_dict = {net.data: data_blob, net.gt_label_2d: label_blob, net.keep_prob: 1.0}
+            feed_dict = {net.data: data_blob, net.gt_label_2d: label_blob, net.keep_prob: keep_prob}
 
     sess.run(net.enqueue_op, feed_dict=feed_dict)
 
     if cfg.TEST.VERTEX_REG_2D:
         if cfg.TEST.POSE_REG:
-            return get_data(sess, net)
+            return get_data(sess, net, losses, output_dir, i)
         else:
             labels_2d, probs, vertex_pred, rois, poses = \
                 sess.run([net.get_output('label_2d'), net.get_output('prob_normalized'), net.get_output('vertex_pred'), net.get_output('rois'), net.get_output('poses_init')])

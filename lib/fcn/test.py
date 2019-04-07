@@ -891,11 +891,12 @@ def plot_data(im, im_depth, im_labels, colors, center_map, labels, rois, poses, 
 
                 # projection
                 RT = np.zeros((3, 4), dtype=np.float32)
+                print("Quat pred")
+                print(poses[i, :4])
                 RT[:3, :3] = quat2mat(poses[i, :4])
                 RT[:, 3] = poses[i, 4:7]
-                print classes[cls]
-                print RT
-                print '\n'
+                print("RT pred")
+                print RT[:3, :3]
                 x2d = np.matmul(intrinsic_matrix, np.matmul(RT, x3d))
                 x2d[0, :] = np.divide(x2d[0, :], x2d[2, :])
                 x2d[1, :] = np.divide(x2d[1, :], x2d[2, :])
