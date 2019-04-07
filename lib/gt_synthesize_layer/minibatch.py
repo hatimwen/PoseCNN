@@ -432,9 +432,11 @@ def _get_label_blob(roidb, intrinsic_matrix, data_out, num_classes, db_inds_syn,
                     is_multi_instances = 1
                     # read mask image
                     mask_img = cv2.imread(roidb[i]['mask'], cv2.IMREAD_UNCHANGED)
-                    sim_data = False
-                    if sim_data:
+                    try:
+                        # The mask image needs to be croped for simulation/dope data, because their masks are not black/white but are color masks.
                         mask_img = mask_img[:, :, 0]
+                    except IndexError:
+                        pass
                     mask = pad_im(mask_img, 16)
                 else:
                     is_multi_instances = 0
