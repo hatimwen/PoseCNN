@@ -218,7 +218,10 @@ class Network(object):
     @layer
     def deconv(self, input, k_h, k_w, c_o, s_h, s_w, name, reuse=None, padding=DEFAULT_PADDING, trainable=True):
         self.validate_padding(padding)
-        c_i = input.get_shape()[-1]
+        try:
+            c_i = input.get_shape()[-1]
+        except AttributeError:
+            c_i = input.input.get_shape()[-1]
         with tf.variable_scope(name, reuse=reuse) as scope:
             # Compute shape out of input
             in_shape = tf.shape(input)

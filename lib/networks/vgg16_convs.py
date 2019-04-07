@@ -74,8 +74,11 @@ class vgg16_convs(Network):
         self.setup()
 
     def setup(self):
-        dropout_type = "normal"
         activation_function = "relu"
+        if activation_function == "relu":
+            dropout_type = "normal"
+        else:
+            dropout_type = "alpha"
         (self.feed('data')
          .conv(3, 3, 64, 1, 1, name='conv1_1', c_i=3, trainable=self.trainable)
          .conv(3, 3, 64, 1, 1, name='conv1_2', c_i=64, trainable=self.trainable)

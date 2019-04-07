@@ -43,7 +43,8 @@ class SolverWrapper(object):
         self.pretrained_ckpt = pretrained_ckpt
 
         # For checkpoint
-        self.saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES), max_to_keep=12)
+        # self.saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES), max_to_keep=12)
+        self.saver = tf.train.Saver()
 
     def snapshot(self, sess, iter, epoch=0):
         """Take a snapshot of the network after unnormalizing the learned
@@ -58,7 +59,8 @@ class SolverWrapper(object):
         filename = (cfg.TRAIN.SNAPSHOT_PREFIX + infix + '_iter_{:d}_epoch_{:d}'.format(iter + 1, epoch + 1) + '.ckpt')
         filename = os.path.join(self.output_dir, filename)
 
-        self.saver.save(sess, filename, write_meta_graph=False)
+        # self.saver.save(sess, filename, write_meta_graph=False)
+        self.saver.save(sess, filename)
         print 'Wrote snapshot to: {:s}'.format(filename)
 
     def restore(self, session, save_file):
@@ -227,32 +229,22 @@ class SolverWrapper(object):
         loss_vertex_val_op = tf.summary.scalar('loss_vertex_val', loss_vertex_placeholder)
         loss_pose_val_op = tf.summary.scalar('loss_pose_val', loss_pose_placeholder)
 
-
-        # merged = tf.summary.merge_all()
         train_writer = tf.summary.FileWriter(self.output_dir + "/train", sess.graph)
         val_writer = tf.summary.FileWriter(self.output_dir + "/val", sess.graph)
 
-        # coord = tf.train.Coordinator()
         coord_train = Coordinator()
         coord_val = Coordinator()
-        # if cfg.TRAIN.VISUALIZE:
-        #     load_and_enqueue(sess, self.net, data_layer, coord_train)
-        # else:
-        #     t = threading.Thread(target=load_and_enqueue, args=(sess, self.net, data_layer, coord_train))
-        #     t.start()
-        #     t_val = threading.Thread(target=load_and_enqueue_val, args=(sess, self.net, data_layer, coord_val))
 
-        # intialize variables
-        sess.run(tf.global_variables_initializer())
-        if self.pretrained_model is not None:
-            print ('Loading pretrained model '
-                   'weights from {:s}').format(self.pretrained_model)
-            self.net.load(self.pretrained_model, sess, True)
-
-        if self.pretrained_ckpt is not None:
+        if self.pretrained_ckpt is None:
+            if self.pretrained_model is not None:
+                print ('Loading pretrained model '
+                       'weights from {:s}').format(self.pretrained_model)
+                self.net.load(self.pretrained_model, sess, True)
+        else:
             print ('Loading pretrained ckpt '
                    'weights from {:s}').format(self.pretrained_ckpt)
-            self.restore(sess, self.pretrained_ckpt)
+            self.saver.restore(sess, self.pretrained_ckpt)
+            # self.restore(sess, self.pretrained_ckpt)
 
         tf.get_default_graph().finalize()
 
