@@ -12,7 +12,7 @@ from transforms3d.quaternions import quat2mat
 import matplotlib.pyplot as plt
 import timeit
 import tensorflow as tf
-from tools.common import smooth_l1_loss_vertex
+from tools.common import smooth_l1_loss_vertex, combine_poses
 
 
 def test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count):
@@ -131,18 +131,6 @@ def get_image_blob(im, im_depth, meta_data, cfg):
         
     return blob, blob_depth, blob_normal, np.array(im_scale_factors), height, width
 
-
-def combine_poses(data, rois, poses_init, poses_pred, probs, vertex_pred, labels_2d):
-    data = data[0, :, :, :]
-    # combine poses
-    num = rois.shape[0]
-    poses = poses_init
-    for i in xrange(num):
-        class_id = int(rois[i, 1])
-        if class_id >= 0:
-            poses[i, :4] = poses_pred[i, 4 * class_id:4 * class_id + 4]
-    vertex_pred = vertex_pred[0, :, :, :]
-    return data, labels_2d[0, :, :].astype(np.int32), probs[0, :, :, :], vertex_pred, rois, poses
 
 def get_data(sess, net, losses, output_dir, current_iter):
     loss = losses["loss"]

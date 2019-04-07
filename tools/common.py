@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 
 def smooth_l1_loss_vertex(vertex_pred, vertex_targets, vertex_weights, sigma=1.0):
@@ -11,3 +12,16 @@ def smooth_l1_loss_vertex(vertex_pred, vertex_targets, vertex_weights, sigma=1.0
               + (abs_diff - (0.5 / sigma_2)) * (1. - smoothL1_sign)
     loss = tf.div(tf.reduce_sum(in_loss), tf.reduce_sum(vertex_weights) + 1e-10)
     return loss
+
+
+def combine_poses(data, rois, poses_init, poses_pred, probs, vertex_pred, labels_2d):
+    data = data[0, :, :, :]
+    # combine poses
+    num = rois.shape[0]
+    poses = poses_init
+    for i in xrange(num):
+        class_id = int(rois[i, 1])
+        if class_id >= 0:
+            poses[i, :4] = poses_pred[i, 4 * class_id:4 * class_id + 4]
+    vertex_pred = vertex_pred[0, :, :, :]
+    return data, labels_2d[0, :, :].astype(np.int32), probs[0, :, :, :], vertex_pred, rois, poses

@@ -17,8 +17,7 @@ import os
 import tensorflow as tf
 from tensorflow.python.framework.errors_impl import NotFoundError
 import threading
-from ros.test import combine_poses
-from tools.common import smooth_l1_loss_vertex
+from tools.common import smooth_l1_loss_vertex, combine_poses
 from fcn.test import _extract_vertmap, plot_data
 from generate_dataset.common import get_intrinsic_matrix
 import io
