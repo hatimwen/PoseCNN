@@ -50,3 +50,4 @@ runs.txt
 PoseCNN.cu
 nohup.out
 npy/
+*.npy
