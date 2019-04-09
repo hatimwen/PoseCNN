@@ -570,6 +570,35 @@ __global__ void compute_rois_kernel(const int nthreads, float* top_box, float* t
       top_pose[roi_index * 7 + 4] = rx * bb_distance;
       top_pose[roi_index * 7 + 5] = ry * bb_distance;
       top_pose[roi_index * 7 + 6] = bb_distance;
+
+      // compute pose target
+      for (int i = 0; i < num_gt; i++)
+      {
+        int gt_batch = int(gt[i * 13 + 0]);
+        int gt_id = int(gt[i * 13 + 1]);
+        if(cls == gt_id && batch_index == gt_batch)
+        {
+          int gt_ind = i;
+
+          float overlap = compute_box_overlap(cls, extents, meta_data, gt + gt_ind * 13, top_box + roi_index * 7 + 2);
+          if (overlap > 0.5 && *cls_loss < 0.03)
+          {
+            for (int j = 0; j < 9; j++)
+            {
+              top_target[(roi_index + j) * 4 * num_classes + 4 * cls + 0] = gt[gt_ind * 13 + 6];
+              top_target[(roi_index + j) * 4 * num_classes + 4 * cls + 1] = gt[gt_ind * 13 + 7];
+              top_target[(roi_index + j) * 4 * num_classes + 4 * cls + 2] = gt[gt_ind * 13 + 8];
+              top_target[(roi_index + j) * 4 * num_classes + 4 * cls + 3] = gt[gt_ind * 13 + 9];
+
+              top_weight[(roi_index + j) * 4 * num_classes + 4 * cls + 0] = 1;
+              top_weight[(roi_index + j) * 4 * num_classes + 4 * cls + 1] = 1;
+              top_weight[(roi_index + j) * 4 * num_classes + 4 * cls + 2] = 1;
+              top_weight[(roi_index + j) * 4 * num_classes + 4 * cls + 3] = 1;
+            }
+            break;
+          }
+        }
+      }
     }
   }
 }

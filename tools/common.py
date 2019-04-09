@@ -15,7 +15,6 @@ def smooth_l1_loss_vertex(vertex_pred, vertex_targets, vertex_weights, sigma=1.0
 
 
 def combine_poses(data, rois, poses_init, poses_pred, probs, vertex_pred, labels_2d):
-    data = data[0, :, :, :]
     # combine poses
     num = rois.shape[0]
     poses = poses_init

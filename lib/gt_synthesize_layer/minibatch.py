@@ -668,7 +668,7 @@ def _vis_minibatch(im_blob, im_depth_blob, depth_blob, label_blob, meta_data_blo
         im = im[:, :, (2, 1, 0)]
         im = im.astype(np.uint8)
         ax = fig.add_subplot(2, 3, 1)
-        plt.imshow(im)
+        plt.imshow(im, cmap="jet")
         ax.set_title('color') 
 
         # project the 3D box to image
@@ -721,7 +721,7 @@ def _vis_minibatch(im_blob, im_depth_blob, depth_blob, label_blob, meta_data_blo
             im_depth = im_depth[:, :, (2, 1, 0)]
             im_depth = im_depth.astype(np.uint8)
             ax = fig.add_subplot(2, 3, 2)
-            plt.imshow(im_depth)
+            plt.imshow(im_depth, cmap="jet")
             ax.set_title('depth') 
 
         # show label
@@ -739,21 +739,21 @@ def _vis_minibatch(im_blob, im_depth_blob, depth_blob, label_blob, meta_data_blo
         ax = fig.add_subplot(2, 3, 3)
         ax.set_title('label') 
         if cfg.TRAIN.VERTEX_REG_2D or cfg.TRAIN.VERTEX_REG_3D:
-            plt.imshow(label)
+            plt.imshow(label, cmap="jet")
             ax = fig.add_subplot(2, 3, 4)
-            plt.imshow(center[:,:,0])
+            plt.imshow(center[:,:,0], cmap="jet")
             if cfg.TRAIN.VERTEX_REG_2D:
                 ax.set_title('center x') 
             else:
                 ax.set_title('vertex x') 
             ax = fig.add_subplot(2, 3, 5)
-            plt.imshow(center[:,:,1])
+            plt.imshow(center[:,:,1], cmap="jet")
             if cfg.TRAIN.VERTEX_REG_2D:
                 ax.set_title('center y')
             else:
                 ax.set_title('vertex y')
             ax = fig.add_subplot(2, 3, 6)
-            plt.imshow(np.exp(center[:,:,2]))
+            plt.imshow(np.exp(center[:,:,2]), cmap="jet")
             if cfg.TRAIN.VERTEX_REG_2D:
                 ax.set_title('z')
             else:

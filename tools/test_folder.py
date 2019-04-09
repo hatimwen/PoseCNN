@@ -1,3 +1,5 @@
+import matplotlib
+# matplotlib.use('Agg')
 from ros.test import im_segment_single_frame, _extract_vertmap, vis_segmentations_vertmaps_detection
 import timeit
 import tensorflow as tf
@@ -17,6 +19,8 @@ from generate_dataset.dope_to_posecnn import construct_posecnn_meta_data, get_do
 import matplotlib.pyplot as plt
 from ros.test import get_image_blob
 from generate_dataset.dope_to_posecnn import linear_instance_segmentation_mask_image
+from fcn.test import plot_data
+import io
 
 
 def setup():
@@ -36,11 +40,7 @@ def setup():
     cfg.IS_TRAIN = False
     print('Using config:')
     pprint.pprint(cfg)
-    randomize = True
-    if not randomize:
-        # fix the random seeds (numpy and caffe) for reproducibility
-        tf.set_random_seed(cfg.RNG_SEED)
-        np.random.seed(cfg.RNG_SEED)
+    set_seed()
 
     imdb = get_imdb("lov_single_000_box_train")
     output_dir = get_output_dir(imdb, None)
@@ -76,7 +76,15 @@ def subplot(imgs):
 def read_input_data(src_path_prefix):
     dope = True
     if dope:
-        im = cv2.imread(src_path_prefix + ".png", cv2.IMREAD_UNCHANGED)
+        rgba = pad_im(cv2.imread(src_path_prefix + ".png", cv2.IMREAD_UNCHANGED), 16)
+        if rgba.shape[2] == 4:
+            im = np.copy(rgba[:, :, :3])
+            alpha = rgba[:, :, 3]
+            I = np.where(alpha == 0)
+            im[I[0], I[1], :] = 0
+        else:
+            im = rgba
+
         depth_cv = cv2.imread(src_path_prefix + ".depth.png", cv2.IMREAD_ANYDEPTH)
         # chromatic transform
         if cfg.TRAIN.CHROMATIC:
@@ -151,7 +159,7 @@ def read_label_data(src_path_prefix, intrinsic_matrix, num_classes, im_scales, e
             is_multi_instances = 1
             # read mask image
             mask_img = cv2.imread(src_path_prefix + ".is.png", cv2.IMREAD_UNCHANGED)
-            img = linear_instance_segmentation_mask_image(objects, mask_img)
+            mask_img = linear_instance_segmentation_mask_image(objects, mask_img)
             try:
                 # The mask image needs to be croped for simulation/dope data, because their masks are not black/white but are color masks.
                 mask_img = mask_img[:, :, 0]
@@ -220,13 +228,53 @@ def read_label_data(src_path_prefix, intrinsic_matrix, num_classes, im_scales, e
     return depth_blob, label_blob, meta_data_blob, vertex_target_blob, vertex_weight_blob, pose_blob, gt_boxes
 
 
+def get_plot(sess, data, im_label, imdb, vertmap, labels, rois, poses, intrinsic_matrix, output_dir):
+    plot_data(data, None, im_label, imdb._class_colors, vertmap, labels, rois, poses, [], intrinsic_matrix, imdb.num_classes, imdb._classes, imdb._points_all)
+    img_str_placeholder = tf.placeholder(tf.string)
+    image = tf.image.decode_png(img_str_placeholder, channels=4)
+    # Add the batch dimension
+    image_expanded = tf.expand_dims(image, 0)
+
+    # Add image summary
+    img_op = tf.summary.image("Val predictions", image_expanded)
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', dpi=600)
+    buf.seek(0)
+    img_summary = sess.run(img_op, feed_dict={img_str_placeholder: buf.getvalue()})
+    val_writer = tf.summary.FileWriter(output_dir + "/val", sess.graph)
+    val_writer.add_summary(img_summary, 1)
+
+
+def test_weights(sess):
+    print("Testing vars")
+    for var in tf.global_variables():
+        network_var = sess.run(var)
+        loaded = np.load(os.path.join("/home/satco/kaju", var.name.replace("/", "_").replace(":", "_")) + ".npy")
+        is_close = np.isclose(network_var, loaded, 0.00001)
+        if np.isin(False, is_close):
+            print(var.name)
+            print(is_close)
+        else:
+            print("Passed: ", var.name)
+
+
+def set_seed():
+    randomize = False
+    if not randomize:
+        # fix the random seeds (numpy and caffe) for reproducibility
+        seed = 30
+    else:
+        seed = random.randint(0, 100)
+    print("Using seed: ", seed)
+    tf.set_random_seed(seed)
+    np.random.seed(seed)
+
+
 def main():
+    print("Interactive mode: ", matplotlib.is_interactive())
+    print("Backend: ", matplotlib.get_backend())
     config_dict, sess, network, meta_data, imdb, output_dir = setup()
-    # local = tf.local_variables()
-    # global_vars = tf.global_variables()
-    # print(local)
-    # print(global_vars)
-    # return
+    # test_weights(sess)
 
     data_folder = config_dict["data_folder"]
     start = config_dict["start"]
@@ -256,6 +304,7 @@ def main():
 
         if cfg.TEST.VISUALIZE:
             vertmap = _extract_vertmap(labels, vertex_pred, imdb._extents, imdb.num_classes)
+            # get_plot(sess, data, im_label, imdb, vertmap, labels, rois, poses, meta_data['intrinsic_matrix'], output_dir)
             vis_segmentations_vertmaps_detection(data, depth_cv, im_label, imdb._class_colors, vertmap, labels, rois, poses, poses_icp, meta_data['intrinsic_matrix'],
                                                  imdb.num_classes, imdb._classes, imdb._points_all)
 

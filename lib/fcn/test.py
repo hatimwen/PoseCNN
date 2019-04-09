@@ -822,32 +822,34 @@ def vis_segmentations_vertmaps(im, im_depth, im_labels, im_labels_gt, colors, ce
     plt.show()
 
 
-def plot_data(im, im_depth, im_labels, colors, center_map, labels, rois, poses, poses_new, intrinsic_matrix, num_classes, classes, points):
+def plot_data(im_blob, im_depth, im_labels, colors, center_map, labels, rois, poses, poses_new, intrinsic_matrix, num_classes, classes, points, print_data=False):
     fig = plt.figure()
-
+    batch_index = 0
     # show image
-    ax = fig.add_subplot(3, 3, 1)
+    im = im_blob[batch_index, :, :, :].copy()
+    im += cfg.PIXEL_MEANS
     im = im[:, :, (2, 1, 0)]
     im = im.astype(np.uint8)
-    plt.imshow(im)
+    ax = fig.add_subplot(3, 3, 1)
+    plt.imshow(im, cmap="jet")
     ax.set_title('input image')
 
     # show depth
     if im_depth is not None:
         ax = fig.add_subplot(3, 3, 2)
-        plt.imshow(im_depth)
+        plt.imshow(im_depth, cmap="jet")
         ax.set_title('input depth')
 
     # show class label
     ax = fig.add_subplot(3, 3, 3)
     im_labels[im_labels == 3] = 150
-    plt.imshow(im_labels)
+    plt.imshow(im_labels, cmap="jet")
     ax.set_title('class labels')
 
     if cfg.TEST.VERTEX_REG_2D:
         # show centers
         for i in xrange(rois.shape[0]):
-            if rois[i, 1] == 0:
+            if rois[i, 1] != batch_index:
                 continue
             cx = (rois[i, 2] + rois[i, 4]) / 2
             cy = (rois[i, 3] + rois[i, 5]) / 2
@@ -863,24 +865,26 @@ def plot_data(im, im_depth, im_labels, colors, center_map, labels, rois, poses, 
 
     # show vertex map
     ax = fig.add_subplot(3, 3, 4)
-    plt.imshow(center_map[:, :, 0])
+    plt.imshow(center_map[:, :, 0], cmap="jet")
     ax.set_title('centers x')
 
     ax = fig.add_subplot(3, 3, 5)
-    plt.imshow(center_map[:, :, 1])
+    plt.imshow(center_map[:, :, 1], cmap="jet")
     ax.set_title('centers y')
 
     ax = fig.add_subplot(3, 3, 6)
-    plt.imshow(center_map[:, :, 2])
+    plt.imshow(center_map[:, :, 2], cmap="jet")
     ax.set_title('centers z')
 
     # show projection of the poses
     if cfg.TEST.POSE_REG:
 
         ax = fig.add_subplot(3, 3, 7, aspect='equal')
-        plt.imshow(im)
+        plt.imshow(im, cmap="jet")
         ax.invert_yaxis()
-        for i in xrange(rois.shape[0]):
+        for i in xrange(poses.shape[0]):
+            if poses[i, 0] != batch_index:
+                continue
             cls = int(rois[i, 1])
             if cls > 0:
                 # extract 3D points
@@ -891,12 +895,13 @@ def plot_data(im, im_depth, im_labels, colors, center_map, labels, rois, poses, 
 
                 # projection
                 RT = np.zeros((3, 4), dtype=np.float32)
-                print("Quat pred")
-                print(poses[i, :4])
                 RT[:3, :3] = quat2mat(poses[i, :4])
                 RT[:, 3] = poses[i, 4:7]
-                print("RT pred")
-                print RT[:3, :3]
+                if print_data:
+                    print("Quat pred")
+                    print(poses[i, :4])
+                    print("RT pred")
+                    print RT[:3, :3]
                 x2d = np.matmul(intrinsic_matrix, np.matmul(RT, x3d))
                 x2d[0, :] = np.divide(x2d[0, :], x2d[2, :])
                 x2d[1, :] = np.divide(x2d[1, :], x2d[2, :])
@@ -907,37 +912,6 @@ def plot_data(im, im_depth, im_labels, colors, center_map, labels, rois, poses, 
         ax.invert_yaxis()
         ax.set_xlim([0, im.shape[1]])
         ax.set_ylim([im.shape[0], 0])
-
-        if cfg.TEST.POSE_REFINE:
-            ax = fig.add_subplot(3, 3, 8, aspect='equal')
-            plt.imshow(im)
-            ax.invert_yaxis()
-            for i in xrange(rois.shape[0]):
-                cls = int(rois[i, 1])
-                if cls > 0:
-                    # extract 3D points
-                    x3d = np.ones((4, points.shape[1]), dtype=np.float32)
-                    x3d[0, :] = points[cls, :, 0]
-                    x3d[1, :] = points[cls, :, 1]
-                    x3d[2, :] = points[cls, :, 2]
-
-                    # projection
-                    RT = np.zeros((3, 4), dtype=np.float32)
-                    RT[:3, :3] = quat2mat(poses_new[i, :4])
-                    RT[:, 3] = poses_new[i, 4:7]
-                    print cls
-                    print RT
-                    print '\n'
-                    x2d = np.matmul(intrinsic_matrix, np.matmul(RT, x3d))
-                    x2d[0, :] = np.divide(x2d[0, :], x2d[2, :])
-                    x2d[1, :] = np.divide(x2d[1, :], x2d[2, :])
-                    plt.plot(x2d[0, :], x2d[1, :], '.', color=np.divide(colors[cls], 255.0), alpha=0.05)
-
-            ax.set_title('projection refined by ICP')
-            ax.invert_yaxis()
-            ax.set_xlim([0, im.shape[1]])
-            ax.set_ylim([im.shape[0], 0])
-
 
 def vis_segmentations_vertmaps_detection(im, im_depth, im_labels, colors, center_map, labels, rois, poses, poses_new, intrinsic_matrix, num_classes, classes, points):
     """Visual debugging of detections."""

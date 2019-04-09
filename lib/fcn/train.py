@@ -233,6 +233,14 @@ class SolverWrapper(object):
         train_writer = tf.summary.FileWriter(self.output_dir + "/train", sess.graph)
         val_writer = tf.summary.FileWriter(self.output_dir + "/val", sess.graph)
 
+        img_str_placeholder = tf.placeholder(tf.string)
+        image = tf.image.decode_png(img_str_placeholder, channels=4)
+        # Add the batch dimension
+        image_expanded = tf.expand_dims(image, 0)
+
+        # Add image summary
+        img_op = tf.summary.image("Val predictions", image_expanded)
+
         coord_train = Coordinator()
         coord_val = Coordinator()
 
@@ -265,9 +273,11 @@ class SolverWrapper(object):
             for iter_train in range(iters_train):
 
                 timer.tic()
-                loss_summary, loss_cls_summary, loss_vertex_summary, loss_pose_summary, loss_value, loss_cls_value, loss_vertex_value, \
-                    loss_pose_value, loss_regu_value, lr, _ = sess.run([loss_op, loss_cls_op, loss_vertex_op, loss_pose_op, loss, loss_cls, \
+                conv1_1, loss_summary, loss_cls_summary, loss_vertex_summary, loss_pose_summary, loss_value, loss_cls_value, loss_vertex_value, \
+                    loss_pose_value, loss_regu_value, lr, _ = sess.run([self.net.get_output('conv1_1'), loss_op, loss_cls_op, loss_vertex_op, loss_pose_op, loss, loss_cls, \
                     loss_vertex, loss_pose, loss_regu, learning_rate, train_op])
+                if iter_train == iter_train-1:
+                    print(conv1_1)
                 current_iter = iters_train * epoch + iter_train
                 train_writer.add_summary(loss_summary, current_iter)
                 train_writer.add_summary(loss_cls_summary, current_iter)
@@ -290,6 +300,9 @@ class SolverWrapper(object):
             t.join()
             t_val.start()
 
+            for var in tf.global_variables():
+                result = sess.run(var)
+                np.save(var.name.replace("/", "_").replace(":", "_"), result)
             self.snapshot(sess, iter_train, epoch)
 
             losses_val = []
@@ -297,16 +310,15 @@ class SolverWrapper(object):
             losses_vertex_val = []
             losses_pose_val = []
 
-            visualize_n_per_validation = 10
+            visualize_n_per_validation = 10.0
 
             for iter_val in range(iters_val):
 
                 timer.tic()
-                if iter_val % (iters_val / visualize_n_per_validation) == 0:
-                    data, labels_2d, probs, vertex_pred, rois, poses_init, pool_score, pool5, pool4, poses_pred, poses_pred2, loss_value, loss_cls_value, loss_vertex_value, loss_pose_value = \
+                if iter_val % round(iters_val / visualize_n_per_validation) == 0:
+                    data, labels_2d, probs, vertex_pred, rois, poses_init, poses_pred, loss_value, loss_cls_value, loss_vertex_value, loss_pose_value, loss_regu_value, lr = \
                         sess.run([self.net.get_output('data'), self.net.get_output('label_2d'), self.net.get_output('prob_normalized'), self.net.get_output('vertex_pred'), \
-                          self.net.get_output('rois'), self.net.get_output('poses_init'), self.net.get_output("pool_score"), self.net.get_output("pool5"), self.net.get_output("pool4"),
-                          self.net.get_output('poses_tanh'), self.net.get_output("poses_pred"), loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate])
+                          self.net.get_output('rois'), self.net.get_output('poses_init'), self.net.get_output('poses_tanh'), loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate])
                     data, labels, probs, vertex_pred, rois, poses = combine_poses(data, rois, poses_init, poses_pred, probs, vertex_pred, labels_2d)
                     im_label = imdb.labels_to_image(data, labels)
                     vertmap = _extract_vertmap(labels, vertex_pred, imdb._extents, imdb.num_classes)
@@ -315,14 +327,11 @@ class SolverWrapper(object):
                     buf = io.BytesIO()
                     plt.savefig(buf, format='png')
                     buf.seek(0)
-                    image = tf.image.decode_png(buf.getvalue(), channels=4)
-                    # Add the batch dimension
-                    image = tf.expand_dims(image, 0)
-
-                    # Add image summary
-                    img_summary_op = tf.summary.image("Val predictions", image)
+                    sess.run(image, feed_dict={img_str_placeholder: buf.getvalue()})
+                    img_summary = sess.run(img_op)
                     current_iter = iters_train * (epoch + 1) + iter_val
-                    val_writer.add_summary(img_summary_op, current_iter)
+                    val_writer.add_summary(img_summary, current_iter)
+                    plt.close("all")
                 else:
                     loss_value, loss_cls_value, loss_vertex_value, loss_pose_value, loss_regu_value, lr = sess.run([loss, loss_cls, loss_vertex, loss_pose, loss_regu, learning_rate])
                 losses_val.append(loss_value)
