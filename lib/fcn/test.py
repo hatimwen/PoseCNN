@@ -848,20 +848,19 @@ def plot_data(im_blob, im_depth, im_labels, colors, center_map, labels, rois, po
 
     if cfg.TEST.VERTEX_REG_2D:
         # show centers
+        print(rois)
         for i in xrange(rois.shape[0]):
-            if rois[i, 1] != batch_index:
-                continue
             cx = (rois[i, 2] + rois[i, 4]) / 2
             cy = (rois[i, 3] + rois[i, 5]) / 2
             w = rois[i, 4] - rois[i, 2]
             h = rois[i, 5] - rois[i, 3]
             if not np.isinf(cx) and not np.isinf(cy):
-                plt.plot(cx, cy, 'yo')
+                plt.plot(cx, cy, 'yo', markersize=2)
 
                 # show boxes
                 plt.gca().add_patch(
                     plt.Rectangle((cx - w / 2, cy - h / 2), w, h, fill=False,
-                                  edgecolor='g', linewidth=3))
+                                  edgecolor='g', linewidth=2))
 
     # show vertex map
     ax = fig.add_subplot(3, 3, 4)
@@ -883,8 +882,6 @@ def plot_data(im_blob, im_depth, im_labels, colors, center_map, labels, rois, po
         plt.imshow(im, cmap="jet")
         ax.invert_yaxis()
         for i in xrange(poses.shape[0]):
-            if poses[i, 0] != batch_index:
-                continue
             cls = int(rois[i, 1])
             if cls > 0:
                 # extract 3D points
