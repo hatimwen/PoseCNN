@@ -28,6 +28,19 @@ class Coordinator:
     run = True
 
 
+def test_weights(sess):
+    print("Testing vars")
+    for var in tf.global_variables():
+        network_var = sess.run(var)
+        loaded = np.load(os.path.join("/mnt/drive_c/datasets/kaju/PoseCNN/npy", var.name.replace("/", "_").replace(":", "_")) + ".npy")
+        is_close = np.isclose(network_var, loaded, 0.00001)
+        if np.isin(False, is_close):
+            print(var.name)
+            print(is_close)
+        else:
+            print("Passed: ", var.name)
+
+
 class SolverWrapper(object):
     """A simple wrapper around Caffe's solver.
     This wrapper gives us control over he snapshotting process, which we
@@ -259,6 +272,8 @@ class SolverWrapper(object):
 
         tf.train.write_graph(sess.graph_def, self.output_dir, 'model.pbtxt')
 
+        test_weights(sess)
+
         last_snapshot_iter = -1
         timer = Timer()
         epochs = 5
@@ -273,11 +288,9 @@ class SolverWrapper(object):
             for iter_train in range(iters_train):
 
                 timer.tic()
-                conv1_1, loss_summary, loss_cls_summary, loss_vertex_summary, loss_pose_summary, loss_value, loss_cls_value, loss_vertex_value, \
-                    loss_pose_value, loss_regu_value, lr, _ = sess.run([self.net.get_output('conv1_1'), loss_op, loss_cls_op, loss_vertex_op, loss_pose_op, loss, loss_cls, \
+                loss_summary, loss_cls_summary, loss_vertex_summary, loss_pose_summary, loss_value, loss_cls_value, loss_vertex_value, \
+                    loss_pose_value, loss_regu_value, lr, _ = sess.run([loss_op, loss_cls_op, loss_vertex_op, loss_pose_op, loss, loss_cls, \
                     loss_vertex, loss_pose, loss_regu, learning_rate, train_op])
-                if iter_train == iter_train-1:
-                    print(conv1_1)
                 current_iter = iters_train * epoch + iter_train
                 train_writer.add_summary(loss_summary, current_iter)
                 train_writer.add_summary(loss_cls_summary, current_iter)
@@ -325,10 +338,9 @@ class SolverWrapper(object):
                     plot_data(data, None, im_label, imdb._class_colors, vertmap, labels, rois, poses, [], intrinsic_matrix, imdb.num_classes, imdb._classes, imdb._points_all)
                     # more details at: https://stackoverflow.com/questions/38543850/tensorflow-how-to-display-custom-images-in-tensorboard-e-g-matplotlib-plots
                     buf = io.BytesIO()
-                    plt.savefig(buf, format='png')
+                    plt.savefig(buf, format='png', dpi=500)
                     buf.seek(0)
-                    sess.run(image, feed_dict={img_str_placeholder: buf.getvalue()})
-                    img_summary = sess.run(img_op)
+                    img_summary = sess.run(img_op, feed_dict={img_str_placeholder: buf.getvalue()})
                     current_iter = iters_train * (epoch + 1) + iter_val
                     val_writer.add_summary(img_summary, current_iter)
                     plt.close("all")
