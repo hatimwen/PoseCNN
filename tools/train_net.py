@@ -8,6 +8,8 @@
 # --------------------------------------------------------
 
 """Train a Fully Convolutional Network (FCN) on image segmentation database."""
+import matplotlib
+matplotlib.use('Agg')
 
 import _init_paths
 from fcn.train import get_training_roidb, get_val_roidb, train_net, train_net_det
@@ -21,7 +23,7 @@ import os.path as osp
 import tensorflow as tf
 import threading
 from Queue import Queue
-import cv2
+import random
 
 def parse_args():
     """
@@ -276,10 +278,16 @@ if __name__ == '__main__':
     print('Using config:')
     pprint.pprint(cfg)
 
-    if not args.randomize:
+    randomize = False
+
+    if not randomize:
         # fix the random seeds (numpy and caffe) for reproducibility
-        tf.set_random_seed(cfg.RNG_SEED)
-        np.random.seed(cfg.RNG_SEED)
+        seed = 30
+    else:
+        seed = random.randint(0, 100)
+    print("Using seed: ", seed)
+    tf.set_random_seed(seed)
+    np.random.seed(seed)
 
     imdb = get_imdb(args.imdb_name)
     print 'Loaded dataset `{:s}` for training'.format(imdb.name)
