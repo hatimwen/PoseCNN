@@ -848,7 +848,6 @@ def plot_data(im_blob, im_depth, im_labels, colors, center_map, labels, rois, po
 
     if cfg.TEST.VERTEX_REG_2D:
         # show centers
-        print(rois)
         for i in xrange(rois.shape[0]):
             if rois[i][0] != batch_index:
                 continue
@@ -883,8 +882,8 @@ def plot_data(im_blob, im_depth, im_labels, colors, center_map, labels, rois, po
         ax = fig.add_subplot(3, 3, 7, aspect='equal')
         plt.imshow(im, cmap="jet")
         ax.invert_yaxis()
-        for i in xrange(poses.shape[0]):
-            if poses[i][0] != batch_index:
+        for i in xrange(rois.shape[0]):
+            if rois[i][0] != batch_index:
                 continue
             cls = int(rois[i, 1])
             if cls > 0:
