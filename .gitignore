@@ -49,3 +49,4 @@ runs.txt
 .project
 PoseCNN.cu
 nohup.out
+npy/
