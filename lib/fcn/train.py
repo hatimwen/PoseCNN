@@ -735,7 +735,7 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
         labels = network.get_output('labels_gt_2d')
         loss = loss_cross_entropy(scores, labels) + loss_regu
 
-    all_without_regression_branch, regression_vars = split_regression_branch(tf.trainable_variables(), tf.trainable_variables())
+    all_except_pose_fc_layers, pose_fc_layers = split_regression_branch(tf.trainable_variables(), tf.trainable_variables())
 
     # print("######### VARS ###########")
     # print(all_without_regression_branch)
@@ -745,6 +745,7 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
     global_step = tf.Variable(0, trainable=False)
     starter_learning_rate = cfg.TRAIN.LEARNING_RATE
     learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step, cfg.TRAIN.STEPSIZE, 0.5, staircase=False)
+    learning_rate_pose_loss = tf.train.exponential_decay(starter_learning_rate/10, global_step, cfg.TRAIN.STEPSIZE, 0.5, staircase=False)
     momentum = cfg.TRAIN.MOMENTUM
     #learning_rate = clr.cyclic_learning_rate(global_step=global_step, learning_rate=starter_learning_rate, max_lr=starter_learning_rate*10, step_size=2, 
     #                                        mode='triangular2', gamma=0.99994)
@@ -753,6 +754,8 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
         train_op = tf.train.AdamOptimizer(learning_rate, momentum).minimize(loss, global_step=global_step)
+        # train_op = tf.train.AdamOptimizer(learning_rate, momentum).minimize(loss, global_step=global_step, var_list=all_except_pose_fc_layers)
+        # train_op_pose = tf.train.AdamOptimizer(learning_rate_pose_loss, momentum).minimize(loss, global_step=global_step, var_list=pose_fc_layers)
     # val_op = tf.train.AdamOptimizer(learning_rate, momentum).minimize(loss_val, global_step=global_step)
     # val_dict = {"val_op": val_op,
     #             "loss_val": loss_val,

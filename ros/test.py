@@ -38,7 +38,6 @@ def test_ros(sess, network, imdb, meta_data, cfg, rgb, depth, cv_bridge, count):
     if depth is not None:
         filename = 'images/%06d-depth.png' % count
         cv2.imwrite(filename, depth_cv)
-        print filename
 
     # run network
     start_time = timeit.default_timer()
@@ -132,63 +131,10 @@ def get_image_blob(im, im_depth, meta_data, cfg):
     return blob, blob_depth, blob_normal, np.array(im_scale_factors), height, width
 
 
-def get_data(sess, net, losses, output_dir, current_iter):
-    loss = losses["loss"]
-    loss_cls = losses["cls"]
-    loss_vertex = losses["vertex"]
-    loss_pose = losses["pose"]
-
-    loss_op = tf.summary.scalar('loss', tf.squeeze(loss))
-    loss_cls_op = tf.summary.scalar('loss_cls', tf.squeeze(loss_cls))
-    loss_vertex_op = tf.summary.scalar('loss_vertex', tf.squeeze(loss_vertex))
-    loss_pose_op = tf.summary.scalar('loss_pose', tf.squeeze(loss_pose))
-
-    data, labels_2d, probs, vertex_pred, rois, poses_init, pool_score, pool5, pool4, poses_pred, poses_pred2, loss_summary, loss_cls_summary, \
-    loss_vertex_summary, loss_pose_summary, loss_value, loss_cls_value, loss_vertex_value, loss_pose_value = \
-        sess.run([net.get_output("data"), net.get_output('label_2d'), net.get_output('prob_normalized'), net.get_output('vertex_pred'), \
-                  net.get_output('rois'), net.get_output('poses_init'), net.get_output("pool_score"), net.get_output("pool5"), net.get_output("pool4"),
-                  net.get_output('poses_tanh'), net.get_output("poses_pred"), loss_op, loss_cls_op, loss_vertex_op, loss_pose_op, loss, loss_cls, loss_vertex, loss_pose])
-    train_writer = tf.summary.FileWriter(output_dir + "/test", sess.graph)
-    print("Loss: ", loss_value[0])
-    print("Cls: ", loss_cls_value)
-    print("Vertex: ", loss_vertex_value)
-    print("Pose: ", loss_pose_value[0])
-
-    train_writer.add_summary(loss_summary, current_iter)
-    train_writer.add_summary(loss_cls_summary, current_iter)
-    train_writer.add_summary(loss_vertex_summary, current_iter)
-    train_writer.add_summary(loss_pose_summary, current_iter)
-
-    return combine_poses(data, rois, poses_init, poses_pred, probs, vertex_pred, labels_2d)
-
-
-def im_segment_single_frame(sess, net, im_blob, im_depth_blob, im_normal_blob, meta_data, extents, points, symmetry, num_classes, cfg, output_dir, i, depth_blob, label_blob, meta_data_blob, vertex_target_blob, vertex_weight_blob, pose_blob, gt_boxes):
+def im_segment_single_frame(sess, net, im_blob, im_depth_blob, im_normal_blob, meta_data, extents, points, symmetry, num_classes, cfg, output_dir, i, depth_blob, label_blob,
+                            meta_data_blob, vertex_target_blob, vertex_weight_blob, pose_blob, gt_boxes, losses, losses_ops, train_writer):
     """segment image
     """
-
-    loss_regu = tf.add_n(tf.losses.get_regularization_losses(), 'regu')
-
-    loss_cls = net.get_output('loss_cls')
-
-    vertex_pred = net.get_output('vertex_pred')
-
-    vertex_targets = net.get_output('vertex_targets')
-
-    vertex_weights = net.get_output('vertex_weights')
-
-    loss_vertex = 3 * smooth_l1_loss_vertex(vertex_pred, vertex_targets, vertex_weights)
-
-    loss_pose = net.get_output('loss_pose')[0]
-
-    loss = loss_cls + loss_vertex + loss_pose + loss_regu
-
-    losses = {
-        "regu": loss_regu,
-        "cls": loss_cls,
-        "vertex": loss_vertex,
-        "pose": loss_pose,
-        "loss": loss
-    }
 
     # forward pass
     if cfg.INPUT == 'RGBD':
@@ -223,12 +169,10 @@ def im_segment_single_frame(sess, net, im_blob, im_depth_blob, im_normal_blob, m
 
     if cfg.TEST.VERTEX_REG_2D:
         if cfg.TEST.POSE_REG:
-            return get_data(sess, net, losses, output_dir, i)
+            return None
         else:
             labels_2d, probs, vertex_pred, rois, poses = \
                 sess.run([net.get_output('label_2d'), net.get_output('prob_normalized'), net.get_output('vertex_pred'), net.get_output('rois'), net.get_output('poses_init')])
-            print rois
-            print rois.shape
             # non-maximum suppression
             # keep = nms(rois[:, 2:], 0.5)
             # rois = rois[keep, :]

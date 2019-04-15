@@ -35,6 +35,10 @@ def get_intrinsic_matrix():
     return np.float32([[610., 0, 306.], [0, 610., 240.], [0, 0, 1]])
 
 
+def get_meta_data():
+    return {"intrinsic_matrix": get_intrinsic_matrix(), "factor_depth": 10000}
+
+
 # excpects quat in xyzw form
 def invert_quat(quat):
     quat = ros_to_blender_quat(quat)
