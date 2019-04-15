@@ -1,5 +1,6 @@
 import tensorflow as tf
 from networks.network import Network
+from fcn.train import loss_cross_entropy_single_frame
 
 class vgg16_convs(Network):
     def __init__(self, input_format, num_classes, num_units, scales, threshold_label, vote_threshold, vertex_reg_2d=False, vertex_reg_3d=False, pose_reg=False, adaptation=False,
@@ -149,6 +150,10 @@ class vgg16_convs(Network):
         (self.feed('prob_normalized', 'gt_label_2d')
             .hard_label(threshold=self.threshold_label, name='gt_label_weight'))
 
+        scores = self.get_output('prob')
+        labels = self.get_output('gt_label_weight')
+        self.layers['loss_cls'] = loss_cross_entropy_single_frame(scores, labels)
+
         if self.vertex_reg:
             (self.feed('conv5_3')
                 .conv(1, 1, 128, 1, 1, name='score_conv5_vertex', relu=False, c_i=512)
@@ -164,11 +169,7 @@ class vgg16_convs(Network):
                 .conv(1, 1, 3 * self.num_classes, 1, 1, name='vertex_pred', relu=False, c_i=128))
 
             if self.vertex_reg_2d:
-                from fcn.train import loss_cross_entropy_single_frame
-                scores = self.get_output('prob')
-                labels = self.get_output('gt_label_weight')
                 self.layers['is_train'] = self.is_train_queue
-                self.layers['loss_cls'] = loss_cross_entropy_single_frame(scores, labels)
                 (self.feed('label_2d', 'vertex_pred', 'extents', 'meta_data', 'poses', 'loss_cls', 'is_train')
                     .hough_voting_gpu(self.kernel_size, self.vote_threshold, self.vote_percentage, self.skip_pixels, name='hough'))
 

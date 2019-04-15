@@ -24,14 +24,14 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 def get_minibatch(roidb, extents, points, symmetry, num_classes, backgrounds, intrinsic_matrix, \
-    data_queue, db_inds_syn, is_syn, db_inds_adapt, is_adapt, is_symmetric, class_colors=None):
+    data_queue, db_inds_syn, is_syn, db_inds_adapt, is_adapt, is_symmetric, class_colors=None, is_validating=False):
     """Given a roidb, construct a minibatch sampled from it."""
 
     # Get the input image blob, formatted for tensorflow
     random_scale_ind = npr.randint(0, high=len(cfg.TRAIN.SCALES_BASE))
     im_blob, im_depth_blob, im_normal_blob, im_scales, data_out, height, width = _get_image_blob(roidb, random_scale_ind, num_classes, backgrounds,
                                                                                                  intrinsic_matrix, data_queue, db_inds_syn, is_syn,
-                                                                                                 db_inds_adapt, is_adapt)
+                                                                                                 db_inds_adapt, is_adapt, is_validating)
 
     # build the label blob
     depth_blob, label_blob, meta_data_blob, vertex_target_blob, vertex_weight_blob, pose_blob, gt_boxes \
@@ -83,7 +83,7 @@ def get_minibatch(roidb, extents, points, symmetry, num_classes, backgrounds, in
 
     return blobs
 
-def _get_image_blob(roidb, scale_ind, num_classes, backgrounds, intrinsic_matrix, data_queue, db_inds_syn, is_syn, db_inds_adapt, is_adapt):
+def _get_image_blob(roidb, scale_ind, num_classes, backgrounds, intrinsic_matrix, data_queue, db_inds_syn, is_syn, db_inds_adapt, is_adapt, is_validating):
     """Builds an input blob from the images in the roidb at the specified
     scales.
     """
@@ -172,10 +172,10 @@ def _get_image_blob(roidb, scale_ind, num_classes, backgrounds, intrinsic_matrix
                     im = rgba
 
         # chromatic transform
-        if cfg.TRAIN.CHROMATIC:
+        if cfg.TRAIN.CHROMATIC and not is_validating:
             im = chromatic_transform(im)
 
-        if cfg.TRAIN.ADD_NOISE:
+        if cfg.TRAIN.ADD_NOISE and not is_validating:
             im = add_noise(im)
 
         if roidb[i]['flipped']:

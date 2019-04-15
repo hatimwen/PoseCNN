@@ -278,7 +278,7 @@ if __name__ == '__main__':
     print('Using config:')
     pprint.pprint(cfg)
 
-    randomize = False
+    randomize = True
 
     if not randomize:
         # fix the random seeds (numpy and caffe) for reproducibility

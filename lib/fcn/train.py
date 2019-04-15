@@ -28,19 +28,6 @@ class Coordinator:
     run = True
 
 
-def test_weights(sess):
-    print("Testing vars")
-    for var in tf.global_variables():
-        network_var = sess.run(var)
-        loaded = np.load(os.path.join("/mnt/drive_c/datasets/kaju/PoseCNN/npy", var.name.replace("/", "_").replace(":", "_")) + ".npy")
-        is_close = np.isclose(network_var, loaded, 0.00001)
-        if np.isin(False, is_close):
-            print(var.name)
-            print(is_close)
-        else:
-            print("Passed: ", var.name)
-
-
 class SolverWrapper(object):
     """A simple wrapper around Caffe's solver.
     This wrapper gives us control over he snapshotting process, which we
@@ -109,65 +96,151 @@ class SolverWrapper(object):
                 print('Did not restore:' + '\n\t'.join(ignored_var_names))
 
             if len(restore_vars) > 0:
+                print("In saver restore PoseCNN")
                 saver = tf.train.Saver(restore_vars)
                 saver.restore(session, save_file)
             print('Restored %s' % save_file)
-        except NotFoundError:
-            pass
+        except NotFoundError as e:
+            print("Exception in restore")
+            print(e)
 
-    def train_model(self, sess, train_op, loss, learning_rate, max_iters, data_layer):
+    def train_model(self, sess, train_op, loss, loss_cls, loss_regu, learning_rate, iters_train, iters_val, data_layer):
         """Network training loop."""
         # add summary
-        tf.summary.scalar('loss', loss)
-        merged = tf.summary.merge_all()
-        train_writer = tf.summary.FileWriter(self.output_dir, sess.graph)
+        loss_op = tf.summary.scalar('loss', tf.squeeze(loss))
+        loss_cls_op = tf.summary.scalar('loss_cls', tf.squeeze(loss_cls))
 
-        # intialize variables
-        sess.run(tf.global_variables_initializer())
-        if self.pretrained_model is not None:
-            print ('Loading pretrained model '
-                   'weights from {:s}').format(self.pretrained_model)
-            self.net.load(self.pretrained_model, sess, True)
+        loss_placeholder = tf.placeholder(tf.float32, shape=())
+        loss_cls_placeholder = tf.placeholder(tf.float32, shape=())
 
-        print self.pretrained_ckpt
-        if self.pretrained_ckpt is not None:
+        loss_val_op = tf.summary.scalar('loss_val', loss_placeholder)
+        loss_cls_val_op = tf.summary.scalar('loss_cls_val', loss_cls_placeholder)
+
+        train_writer = tf.summary.FileWriter(self.output_dir + "/train", sess.graph)
+        val_writer = tf.summary.FileWriter(self.output_dir + "/val", sess.graph)
+
+        img_str_placeholder = tf.placeholder(tf.string)
+        image = tf.image.decode_png(img_str_placeholder, channels=4)
+        # Add the batch dimension
+        image_expanded = tf.expand_dims(image, 0)
+
+        # Add image summary
+        img_op = tf.summary.image("Val predictions", image_expanded)
+
+        coord_train = Coordinator()
+        coord_val = Coordinator()
+
+        if self.pretrained_ckpt is None:
+            sess.run(tf.global_variables_initializer())
+            if self.pretrained_model is not None:
+                print ('Loading pretrained model '
+                       'weights from {:s}').format(self.pretrained_model)
+                self.net.load(self.pretrained_model, sess, True)
+        else:
             print ('Loading pretrained ckpt '
                    'weights from {:s}').format(self.pretrained_ckpt)
-            self.restore(sess, self.pretrained_ckpt)
+            self.saver.restore(sess, self.pretrained_ckpt)
+            #self.restore(sess, self.pretrained_ckpt)
 
         tf.get_default_graph().finalize()
 
-        coord = tf.train.Coordinator()
-        if cfg.TRAIN.VISUALIZE:
-            load_and_enqueue(sess, self.net, data_layer, coord)
-        else:
-            t = threading.Thread(target=load_and_enqueue, args=(sess, self.net, data_layer, coord))
-            t.start()
+        tf.train.write_graph(sess.graph_def, self.output_dir, 'model.pbtxt')
 
         last_snapshot_iter = -1
         timer = Timer()
-        for iter in range(max_iters):
-            timer.tic()
-            summary, loss_value, lr, _ = sess.run([merged, loss, learning_rate, train_op])
-            train_writer.add_summary(summary, iter)
-            timer.toc()
+        epochs = 5
+        intrinsic_matrix = get_intrinsic_matrix()
+        for epoch in range(epochs):
+            coord_train.run = True
+            coord_val.run = True
+            q_size = sess.run(self.net.q_size)
+            print("Queue size", q_size)
+            t = threading.Thread(target=load_and_enqueue, args=(sess, self.net, data_layer, coord_train, iters_train))
+            t.start()
+            t_val = threading.Thread(target=load_and_enqueue_val, args=(sess, self.net, data_layer, coord_val, iters_val))
+            print("Epoch: %d / %d" % (epoch, epochs))
+            for iter_train in range(iters_train):
 
-            print 'iter: %d / %d, loss: %.4f, lr: %.8f, time: %.2f' % \
-                  (iter + 1, max_iters, loss_value, lr, timer.diff)
+                timer.tic()
+                loss_summary, loss_cls_summary, loss_value, loss_cls_value, loss_regu_value, lr, _ = sess.run([loss_op, loss_cls_op, loss, loss_cls, loss_regu, learning_rate, train_op])
+                current_iter = iters_train * epoch + iter_train
+                train_writer.add_summary(loss_summary, current_iter)
+                train_writer.add_summary(loss_cls_summary, current_iter)
+                #starter_learning_rate = cfg.TRAIN.LEARNING_RATE
+                #lr = sess.run(clr.cyclic_learning_rate(global_step=iters_train * epoch + iter_train, learning_rate=starter_learning_rate, max_lr=starter_learning_rate*10, 
+                #                                       step_size=2, mode='triangular2', gamma=0.99994))
+                timer.toc()
 
-            if (iter + 1) % (10 * cfg.TRAIN.DISPLAY) == 0:
-                print 'speed: {:.3f}s / iter'.format(timer.average_time)
+                print 'iter: %d / %d, loss: %.4f, loss_cls: %.4f, lr: %.8f,  time: %.2f' % \
+                      (iter_train + 1, iters_train, loss_value, loss_cls_value, lr, timer.diff)
 
-            if (iter + 1) % cfg.TRAIN.SNAPSHOT_ITERS == 0:
-                last_snapshot_iter = iter
-                self.snapshot(sess, iter)
+                if (iter_train + 1) % (10 * cfg.TRAIN.DISPLAY) == 0:
+                    print 'speed: {:.3f}s / iter'.format(timer.average_time)
 
-        if last_snapshot_iter != iter:
-            self.snapshot(sess, iter)
+            coord_train.run = False
+            q_size = sess.run(self.net.q_size)
+            print("Queue size", q_size)
+            t.join()
+            t_val.start()
+
+            for var in tf.global_variables():
+                result = sess.run(var)
+                np.save(var.name.replace("/", "_").replace(":", "_"), result)
+            self.snapshot(sess, iter_train, epoch)
+
+            losses_val = []
+            losses_cls_val = []
+
+            visualize_n_per_validation = 10.0
+
+            for iter_val in range(iters_val):
+
+                timer.tic()
+                if iter_val % round(iters_val / visualize_n_per_validation) == 0:
+                    data, labels_2d, probs, loss_value, loss_cls_value, loss_regu_value, lr = \
+                        sess.run([self.net.get_output('data'), self.net.get_output('label_2d'), self.net.get_output('prob_normalized'), loss, loss_cls, loss_regu, learning_rate])
+                    #data, labels, probs, vertex_pred, rois, poses = combine_poses(data, rois, poses_init, poses_pred, probs, vertex_pred, labels_2d)
+                    #im_label = imdb.labels_to_image(data, labels)
+                    #vertmap = _extract_vertmap(labels, vertex_pred, imdb._extents, imdb.num_classes)
+                    #plot_data(data, None, im_label, imdb._class_colors, vertmap, labels, rois, poses, [], intrinsic_matrix, imdb.num_classes, imdb._classes, imdb._points_all)
+                    # more details at: https://stackoverflow.com/questions/38543850/tensorflow-how-to-display-custom-images-in-tensorboard-e-g-matplotlib-plots
+                    #buf = io.BytesIO()
+                    #plt.savefig(buf, format='png', dpi=500)
+                    #buf.seek(0)
+                    #img_summary = sess.run(img_op, feed_dict={img_str_placeholder: buf.getvalue()})
+                    #current_iter = iters_train * (epoch + 1) + iter_val
+                    #val_writer.add_summary(img_summary, current_iter)
+                    #plt.close("all")
+                else:
+                    loss_value, loss_cls_value, loss_regu_value, lr = sess.run([loss, loss_cls, loss_regu, learning_rate])
+                losses_val.append(loss_value)
+                losses_cls_val.append(loss_cls_value)
+                loss_val_summary = sess.run(loss_val_op, feed_dict={loss_placeholder: loss_value})
+                loss_cls_val_summary = sess.run(loss_cls_val_op, feed_dict={loss_cls_placeholder: loss_cls_value})
+                current_iter = iters_val * (epoch + 1) + iter_val
+                val_writer.add_summary(loss_val_summary, current_iter)
+                val_writer.add_summary(loss_cls_val_summary, current_iter)
+                timer.toc()
+
+                print 'iter: %d / %d, loss: %.4f, loss_cls: %.4f, lr: %.8f,  time: %.2f' % \
+                      (iter_val + 1, iters_val, loss_value, loss_cls_value, lr,
+                       timer.diff)
+
+                if (iter_val + 1) % (10 * cfg.TRAIN.DISPLAY) == 0:
+                    print 'speed: {:.3f}s / iter'.format(timer.average_time)
+
+            coord_val.run = False
+            q_size = sess.run(self.net.q_size)
+            print("Queue size", q_size)
+            t_val.join()
+
+            #loss_val_summary = sess.run(loss_val_op, feed_dict={loss_placeholder: np.mean(losses_val)})
+            #loss_cls_val_summary = sess.run(loss_cls_val_op, feed_dict={loss_cls_placeholder: np.mean(losses_cls_val)})
+            #current_iter = iters_train * (epoch + 1)
+            #val_writer.add_summary(loss_val_summary, current_iter)
+            #val_writer.add_summary(loss_cls_val_summary, current_iter)
 
         sess.run(self.net.close_queue_op)
-        coord.request_stop()
-        coord.join([t])
 
     def train_model_vertex(self, sess, train_op, loss, loss_cls, loss_vertex, loss_regu, learning_rate, max_iters, data_layer):
         """Network training loop."""
@@ -196,8 +269,6 @@ class SolverWrapper(object):
         else:
             t = threading.Thread(target=load_and_enqueue, args=(sess, self.net, data_layer, coord))
             t.start()
-
-        # tf.train.write_graph(sess.graph_def, self.output_dir, 'model.pbtxt')
 
         last_snapshot_iter = -1
         timer = Timer()
@@ -232,16 +303,18 @@ class SolverWrapper(object):
         loss_cls_op = tf.summary.scalar('loss_cls', tf.squeeze(loss_cls))
         loss_vertex_op = tf.summary.scalar('loss_vertex', tf.squeeze(loss_vertex))
         loss_pose_op = tf.summary.scalar('loss_pose', tf.squeeze(loss_pose))
+        scalar_placeholder = tf.placeholder(tf.float32, shape=())
+        lr_op = tf.summary.scalar('lr', scalar_placeholder)
 
-        loss_placeholder = tf.placeholder(tf.float32, shape=())
-        loss_cls_placeholder = tf.placeholder(tf.float32, shape=())
-        loss_vertex_placeholder = tf.placeholder(tf.float32, shape=())
-        loss_pose_placeholder = tf.placeholder(tf.float32, shape=())
+        loss_val_op = tf.summary.scalar('loss_val', scalar_placeholder)
+        loss_cls_val_op = tf.summary.scalar('loss_cls_val', scalar_placeholder)
+        loss_vertex_val_op = tf.summary.scalar('loss_vertex_val', scalar_placeholder)
+        loss_pose_val_op = tf.summary.scalar('loss_pose_val', scalar_placeholder)
 
-        loss_val_op = tf.summary.scalar('loss_val', loss_placeholder)
-        loss_cls_val_op = tf.summary.scalar('loss_cls_val', loss_cls_placeholder)
-        loss_vertex_val_op = tf.summary.scalar('loss_vertex_val', loss_vertex_placeholder)
-        loss_pose_val_op = tf.summary.scalar('loss_pose_val', loss_pose_placeholder)
+        loss_val_mean_op = tf.summary.scalar('loss_val_mean', scalar_placeholder)
+        loss_cls_val_mean_op = tf.summary.scalar('loss_cls_val_mean', scalar_placeholder)
+        loss_vertex_val_mean_op = tf.summary.scalar('loss_vertex_val_mean', scalar_placeholder)
+        loss_pose_val_mean_op = tf.summary.scalar('loss_pose_val_mean', scalar_placeholder)
 
         train_writer = tf.summary.FileWriter(self.output_dir + "/train", sess.graph)
         val_writer = tf.summary.FileWriter(self.output_dir + "/val", sess.graph)
@@ -258,6 +331,7 @@ class SolverWrapper(object):
         coord_val = Coordinator()
 
         if self.pretrained_ckpt is None:
+            sess.run(tf.global_variables_initializer())
             if self.pretrained_model is not None:
                 print ('Loading pretrained model '
                        'weights from {:s}').format(self.pretrained_model)
@@ -266,13 +340,10 @@ class SolverWrapper(object):
             print ('Loading pretrained ckpt '
                    'weights from {:s}').format(self.pretrained_ckpt)
             self.saver.restore(sess, self.pretrained_ckpt)
-            # self.restore(sess, self.pretrained_ckpt)
 
         tf.get_default_graph().finalize()
 
         tf.train.write_graph(sess.graph_def, self.output_dir, 'model.pbtxt')
-
-        test_weights(sess)
 
         last_snapshot_iter = -1
         timer = Timer()
@@ -296,6 +367,8 @@ class SolverWrapper(object):
                 train_writer.add_summary(loss_cls_summary, current_iter)
                 train_writer.add_summary(loss_vertex_summary, current_iter)
                 train_writer.add_summary(loss_pose_summary, current_iter)
+                lr_summary = sess.run(lr_op, feed_dict={scalar_placeholder: lr})
+                train_writer.add_summary(lr_summary, current_iter)
                 #starter_learning_rate = cfg.TRAIN.LEARNING_RATE
                 #lr = sess.run(clr.cyclic_learning_rate(global_step=iters_train * epoch + iter_train, learning_rate=starter_learning_rate, max_lr=starter_learning_rate*10, 
                 #                                       step_size=2, mode='triangular2', gamma=0.99994))
@@ -313,10 +386,8 @@ class SolverWrapper(object):
             t.join()
             t_val.start()
 
-            for var in tf.global_variables():
-                result = sess.run(var)
-                np.save(var.name.replace("/", "_").replace(":", "_"), result)
-            self.snapshot(sess, iter_train, epoch)
+            if iters_train > 0:
+                self.snapshot(sess, iter_train, epoch)
 
             losses_val = []
             losses_cls_val = []
@@ -350,6 +421,17 @@ class SolverWrapper(object):
                 losses_cls_val.append(loss_cls_value)
                 losses_vertex_val.append(loss_vertex_value)
                 losses_pose_val.append(loss_pose_value)
+                loss_val_summary = sess.run(loss_val_op, feed_dict={scalar_placeholder: loss_value[0]})
+                loss_cls_val_summary = sess.run(loss_cls_val_op, feed_dict={scalar_placeholder: loss_cls_value})
+                loss_vertex_val_summary = sess.run(loss_vertex_val_op, feed_dict={scalar_placeholder: loss_vertex_value})
+                loss_pose_val_summary = sess.run(loss_pose_val_op, feed_dict={scalar_placeholder: loss_pose_value[0]})
+                #current_iter = 796 * (epoch + 1) + iter_val + 1
+                current_iter = iters_train * (epoch + 1) + iter_val
+                #current_iter = iter_val
+                val_writer.add_summary(loss_val_summary, current_iter)
+                val_writer.add_summary(loss_cls_val_summary, current_iter)
+                val_writer.add_summary(loss_vertex_val_summary, current_iter)
+                val_writer.add_summary(loss_pose_val_summary, current_iter)
                 timer.toc()
 
                 print 'iter: %d / %d, loss: %.4f, loss_cls: %.4f, loss_vertex: %.4f, loss_pose: %.4f, lr: %.8f,  time: %.2f' % \
@@ -359,20 +441,19 @@ class SolverWrapper(object):
                 if (iter_val + 1) % (10 * cfg.TRAIN.DISPLAY) == 0:
                     print 'speed: {:.3f}s / iter'.format(timer.average_time)
 
-            coord_val.run = False
-            q_size = sess.run(self.net.q_size)
-            print("Queue size", q_size)
-            t_val.join()
-
-            loss_val_summary = sess.run(loss_val_op, feed_dict={loss_placeholder: np.mean(losses_val)})
-            loss_cls_val_summary = sess.run(loss_cls_val_op, feed_dict={loss_cls_placeholder: np.mean(losses_cls_val)})
-            loss_vertex_val_summary = sess.run(loss_vertex_val_op, feed_dict={loss_vertex_placeholder: np.mean(losses_vertex_val)})
-            loss_pose_val_summary = sess.run(loss_pose_val_op, feed_dict={loss_pose_placeholder: np.mean(losses_pose_val)})
-            current_iter = iters_train * (epoch + 1)
+            loss_val_summary = sess.run(loss_val_mean_op, feed_dict={scalar_placeholder: np.mean(losses_val)})
+            loss_cls_val_summary = sess.run(loss_cls_val_mean_op, feed_dict={scalar_placeholder: np.mean(losses_cls_val)})
+            loss_vertex_val_summary = sess.run(loss_vertex_val_mean_op, feed_dict={scalar_placeholder: np.mean(losses_vertex_val)})
+            loss_pose_val_summary = sess.run(loss_pose_val_mean_op, feed_dict={scalar_placeholder: np.mean(losses_pose_val)})
             val_writer.add_summary(loss_val_summary, current_iter)
             val_writer.add_summary(loss_cls_val_summary, current_iter)
             val_writer.add_summary(loss_vertex_val_summary, current_iter)
             val_writer.add_summary(loss_pose_val_summary, current_iter)
+
+            coord_val.run = False
+            q_size = sess.run(self.net.q_size)
+            print("Queue size", q_size)
+            t_val.join()
 
         sess.run(self.net.close_queue_op)
 
@@ -508,8 +589,8 @@ def get_val_roidb(imdb):
 
 def load_and_enqueue_val(sess, net, data_layer, coord, iters=0):
     iter = 0
+    data_layer._validation = True
     while coord.run and iter < iters:
-        data_layer._validation = True
         blobs = data_layer.forward(iter)
         # blobs = data_layer.forward()
         iter += 1
@@ -568,9 +649,9 @@ def load_and_enqueue_val(sess, net, data_layer, coord, iters=0):
 
 def load_and_enqueue(sess, net, data_layer, coord, iters=0):
     iter = 0
+    data_layer._validation = False
     while coord.run and iter < iters:
         blobs = data_layer.forward(iter)
-        # blobs = data_layer.forward()
         iter += 1
 
         if cfg.INPUT == 'RGBD':
@@ -726,9 +807,8 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
                 else:
                     loss = loss_cls + loss_vertex + loss_regu
             else:
-                scores = network.get_output('prob')
-                labels = network.get_output('gt_label_weight')
-                loss = loss_cross_entropy_single_frame(scores, labels) + loss_regu
+                loss_cls = network.get_output('loss_cls')
+                loss = loss_cls + loss_regu
     else:
         # classification loss
         scores = network.get_output('outputs')
@@ -788,7 +868,7 @@ def train_net(network, imdb, roidb, roidb_val, output_dir, pretrained_model=None
             else:
                 sw.train_model_vertex(sess, train_op, loss, loss_cls, loss_vertex, loss_regu, learning_rate, iters_train, data_layer)
         else:
-            sw.train_model(sess, train_op, loss, learning_rate, iters_train, data_layer)
+            sw.train_model(sess, train_op, loss, loss_cls, loss_regu, learning_rate, iters_train, iters_val, data_layer)
         print 'done solving'
 
 
