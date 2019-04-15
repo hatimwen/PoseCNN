@@ -32,6 +32,8 @@ class GtSynthesizeLayer(object):
         self._name = name
         self._data_queue = data_queue
         self._shuffle_roidb_inds()
+        self._cur_val = 0
+        self._perm_val = np.arange(len(self._roidb_val))
         self._shuffle_syn_inds()
         self._shuffle_adapt_inds()
         self._build_background_images()
@@ -43,8 +45,11 @@ class GtSynthesizeLayer(object):
     def _shuffle_roidb_inds(self):
         """Randomly permute the training roidb."""
         self._perm = np.random.permutation(np.arange(len(self._roidb)))
-        self._perm_val = np.random.permutation(np.arange(len(self._roidb_val)))
         self._cur = 0
+
+    def _shuffle_roidb_val_inds(self):
+        """Randomly permute the validation roidb."""
+        self._perm_val = np.random.permutation(np.arange(len(self._roidb_val)))
         self._cur_val = 0
 
     def _shuffle_syn_inds(self):
@@ -61,9 +66,10 @@ class GtSynthesizeLayer(object):
         if self._validation:
             db_inds = self._perm_val[self._cur_val:self._cur_val + cfg.TRAIN.IMS_PER_BATCH]
             if self._cur_val + cfg.TRAIN.IMS_PER_BATCH >= len(self._roidb_val):
-                self._shuffle_roidb_inds()
+                self._cur_val = 0
+                #self._shuffle_roidb_val_inds
             if is_syn == 0 and is_adapt == 0:
-                self._cur += cfg.TRAIN.IMS_PER_BATCH
+                self._cur_val += cfg.TRAIN.IMS_PER_BATCH
 
             db_inds_syn = self._perm_syn[self._cur_syn:self._cur_syn + cfg.TRAIN.IMS_PER_BATCH]
             if is_syn:
@@ -129,13 +135,16 @@ class GtSynthesizeLayer(object):
           is_symmetric = 0
 
         db_inds, db_inds_syn, db_inds_adapt = self._get_next_minibatch_inds(is_syn, is_adapt)
-        minibatch_db = [self._roidb[i] for i in db_inds]
+        if self._validation:
+            minibatch_db = [self._roidb_val[i] for i in db_inds]
+        else:
+            minibatch_db = [self._roidb[i] for i in db_inds]
         if cfg.INPUT == 'DEPTH' or cfg.INPUT == 'NORMAL':
             backgrounds = self._backgrounds_depth
         else:
             backgrounds = self._backgrounds
         return get_minibatch(minibatch_db, self._extents, self._points, self._symmetry, self._num_classes, backgrounds, self._intrinsic_matrix, self._data_queue, db_inds_syn,
-                             is_syn, db_inds_adapt, is_adapt, is_symmetric, self._class_colors)
+                             is_syn, db_inds_adapt, is_adapt, is_symmetric, self._class_colors, self._validation)
             
     def forward(self, iter):
         """Get blobs and copy them into this layer's top blob vector."""
