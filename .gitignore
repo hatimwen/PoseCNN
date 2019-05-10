@@ -51,5 +51,7 @@ PoseCNN.cu
 nohup.out
 npy/
 *.npy
+*/meta_data.txt
 
 experiments/scripts/lov_color_box_train.sh
+videos/

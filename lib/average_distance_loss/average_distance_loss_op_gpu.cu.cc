@@ -175,11 +175,17 @@ __global__ void AveragedistanceForward(const int nthreads, const Dtype* predicti
     y2 = rotations[ind + 3] * point[index_min + 0] + rotations[ind + 4] * point[index_min + 1] + rotations[ind + 5] * point[index_min + 2];
     z2 = rotations[ind + 6] * point[index_min + 0] + rotations[ind + 7] * point[index_min + 1] + rotations[ind + 8] * point[index_min + 2];
 
-    Dtype distance = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) + (z1 - z2) * (z1 - z2));
+// SLoss
+//    Dtype distance = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) + (z1 - z2) * (z1 - z2));
+// SLoss modified
+    Dtype distance = sqrtf((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) + (z1 - z2) * (z1 - z2));
     if (distance < margin)
       continue;
 
-    losses[index_thread] = (distance - margin) / (2.0 * batch_size * num_points);
+// SLoss
+//    losses[index_thread] = (distance - margin) / (2.0 * batch_size * num_points);
+// SLoss modified
+    losses[index_thread] = distance / num_points;
 
     int index_diff = n * num_points * POSE_CHANNELS * num_classes + p * POSE_CHANNELS * num_classes + POSE_CHANNELS * index_cls;
     for (int j = 0; j < 3; j++)
@@ -330,10 +336,17 @@ void AveragedistanceForwardLaucher(OpKernelContext* context,
   cudaDeviceSynchronize();
 
   // sum the loss
+// SLoss
+//  thrust::device_ptr<float> losses_ptr(loss_batch);
+//  float loss = thrust::reduce(losses_ptr, losses_ptr + batch_size);
+//  cudaMemcpy(top_data, &loss, sizeof(float), cudaMemcpyHostToDevice);
+
+// SLoss modified
   checkCuda(cudaMemset(top_data, 0, sizeof(float)));
-  thrust::device_ptr<float> losses_ptr(loss_batch);
-  float loss = thrust::reduce(losses_ptr, losses_ptr + batch_size);
-  cudaMemcpy(top_data, &loss, sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(top_data, loss_batch, batch_size * sizeof(float), cudaMemcpyDeviceToDevice);
+
+
+
 
   err = cudaGetLastError();
   if(cudaSuccess != err)

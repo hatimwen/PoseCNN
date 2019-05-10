@@ -822,7 +822,8 @@ def vis_segmentations_vertmaps(im, im_depth, im_labels, im_labels_gt, colors, ce
     plt.show()
 
 
-def plot_data(im_blob, im_depth, im_labels, colors, center_map, labels, rois, poses, poses_new, intrinsic_matrix, num_classes, classes, points, print_data=False):
+def plot_data(im_blob, im_depth, im_labels, colors, center_map, labels, rois, poses, poses_new, intrinsic_matrix, num_classes, classes, points, instance_mask=None,
+              print_data=False, simple=True):
     fig = plt.figure()
     batch_index = 0
     # show image
@@ -830,56 +831,20 @@ def plot_data(im_blob, im_depth, im_labels, colors, center_map, labels, rois, po
     im += cfg.PIXEL_MEANS
     im = im[:, :, (2, 1, 0)]
     im = im.astype(np.uint8)
-    ax = fig.add_subplot(3, 3, 1)
+    if simple:
+        ax = fig.add_subplot(1, 2, 1)
+    else:
+        ax = fig.add_subplot(2, 3, 1)
     plt.imshow(im, cmap="jet")
     ax.set_title('input image')
-
-    # show depth
-    if im_depth is not None:
-        ax = fig.add_subplot(3, 3, 2)
-        plt.imshow(im_depth, cmap="jet")
-        ax.set_title('input depth')
-
-    # show class label
-    ax = fig.add_subplot(3, 3, 3)
-    im_labels[im_labels == 3] = 150
-    plt.imshow(im_labels, cmap="jet")
-    ax.set_title('class labels')
-
-    if cfg.TEST.VERTEX_REG_2D:
-        # show centers
-        for i in xrange(rois.shape[0]):
-            if rois[i][0] != batch_index:
-                continue
-            cx = (rois[i, 2] + rois[i, 4]) / 2
-            cy = (rois[i, 3] + rois[i, 5]) / 2
-            w = rois[i, 4] - rois[i, 2]
-            h = rois[i, 5] - rois[i, 3]
-            if not np.isinf(cx) and not np.isinf(cy):
-                plt.plot(cx, cy, 'yo', markersize=2)
-
-                # show boxes
-                plt.gca().add_patch(
-                    plt.Rectangle((cx - w / 2, cy - h / 2), w, h, fill=False,
-                                  edgecolor='g', linewidth=2))
-
-    # show vertex map
-    ax = fig.add_subplot(3, 3, 4)
-    plt.imshow(center_map[:, :, 0], cmap="jet")
-    ax.set_title('centers x')
-
-    ax = fig.add_subplot(3, 3, 5)
-    plt.imshow(center_map[:, :, 1], cmap="jet")
-    ax.set_title('centers y')
-
-    ax = fig.add_subplot(3, 3, 6)
-    plt.imshow(center_map[:, :, 2], cmap="jet")
-    ax.set_title('centers z')
 
     # show projection of the poses
     if cfg.TEST.POSE_REG:
 
-        ax = fig.add_subplot(3, 3, 7, aspect='equal')
+        if simple:
+            ax = fig.add_subplot(1, 2, 2, aspect='equal', sharex=ax, sharey=ax)
+        else:
+            ax = fig.add_subplot(2, 3, 2, aspect='equal', sharex=ax, sharey=ax)
         plt.imshow(im, cmap="jet")
         ax.invert_yaxis()
         for i in xrange(rois.shape[0]):
@@ -898,10 +863,13 @@ def plot_data(im_blob, im_depth, im_labels, colors, center_map, labels, rois, po
                 RT[:3, :3] = quat2mat(poses[i, :4])
                 RT[:, 3] = poses[i, 4:7]
                 if print_data:
+                    print(cls)
                     print("Quat pred")
                     print(poses[i, :4])
                     print("RT pred")
                     print RT[:3, :3]
+                    print("Pose pred")
+                    print(RT[:, 3])
                 x2d = np.matmul(intrinsic_matrix, np.matmul(RT, x3d))
                 x2d[0, :] = np.divide(x2d[0, :], x2d[2, :])
                 x2d[1, :] = np.divide(x2d[1, :], x2d[2, :])
@@ -913,17 +881,59 @@ def plot_data(im_blob, im_depth, im_labels, colors, center_map, labels, rois, po
         ax.set_xlim([0, im.shape[1]])
         ax.set_ylim([im.shape[0], 0])
 
-def vis_segmentations_vertmaps_detection(im, im_depth, im_labels, colors, center_map, labels, rois, poses, poses_new, intrinsic_matrix, num_classes, classes, points):
+    if not simple:
+        # show depth
+        if im_depth is not None:
+            ax = fig.add_subplot(2, 3, 3, sharex=ax, sharey=ax)
+            plt.imshow(im_depth, cmap="jet")
+            ax.set_title('input depth')
+
+        show class label
+        ax = fig.add_subplot(2, 3, 3, sharex=ax, sharey=ax)
+        im_labels[im_labels == 3] = 150
+        plt.imshow(im_labels, cmap="jet")
+        ax.set_title('class labels')
+
+        if cfg.TEST.VERTEX_REG_2D:
+            # show centers
+            for i in xrange(rois.shape[0]):
+                if rois[i][0] != batch_index:
+                    continue
+                cx = (rois[i, 2] + rois[i, 4]) / 2
+                cy = (rois[i, 3] + rois[i, 5]) / 2
+                w = rois[i, 4] - rois[i, 2]
+                h = rois[i, 5] - rois[i, 3]
+                if not np.isinf(cx) and not np.isinf(cy):
+                    plt.plot(cx, cy, 'yo', markersize=2)
+
+                    # show boxes
+                    plt.gca().add_patch(
+                        plt.Rectangle((cx - w / 2, cy - h / 2), w, h, fill=False,
+                                      edgecolor='g', linewidth=2))
+
+        # show vertex map
+        ax = fig.add_subplot(2, 3, 4, sharex=ax, sharey=ax)
+        plt.imshow(center_map[:, :, 0], cmap="jet")
+        ax.set_title('centers x')
+
+        ax = fig.add_subplot(2, 3, 5, sharex=ax, sharey=ax)
+        plt.imshow(center_map[:, :, 1], cmap="jet")
+        ax.set_title('centers y')
+
+        ax = fig.add_subplot(2, 3, 6, sharex=ax, sharey=ax)
+        plt.imshow(center_map[:, :, 2], cmap="jet")
+        ax.set_title('centers z')
+
+        if instance_mask is not None:
+            ax = fig.add_subplot(3, 3, 8, aspect='equal', sharex=ax, sharey=ax)
+            plt.imshow(instance_mask, cmap="jet")
+            ax.set_title('Instance mask')
+
+
+
+def vis_segmentations_vertmaps_detection(im, im_depth, im_labels, colors, center_map, labels, rois, poses, poses_new, intrinsic_matrix, num_classes, classes, points, instance_mask):
     """Visual debugging of detections."""
-    plot_data(im, im_depth, im_labels, colors, center_map, labels, rois, poses, poses_new, intrinsic_matrix, num_classes, classes, points)
-    plt.show()
-    # plt.draw()
-    # plt.pause(0.033)
-    # plt.clf()
-    # plt.cla()
-    # cmd = raw_input("Press Enter to continue, Type exit to exit\n")
-    # if cmd == "exit":
-    #     sys.exit()
+    plot_data(im, im_depth, im_labels, colors, center_map, labels, rois, poses, poses_new, intrinsic_matrix, num_classes, classes, points, instance_mask)
 
 
 def vis_segmentations_vertmaps_3d(im, im_depth, im_labels, im_labels_gt, colors, vertmap, vertmap_target,

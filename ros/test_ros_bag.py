@@ -8,6 +8,8 @@
 # --------------------------------------------------------
 
 """Test a FCN on an image database."""
+# import matplotlib
+# matplotlib.use('Agg')
 
 import timeit
 from fcn.config import cfg
@@ -20,10 +22,15 @@ from generate_dataset.export_data_from_ros_bag import read_dataset_times
 from tools.test_dataset import setup, queue_up_data, forward_pass
 from generate_dataset.common import get_meta_data
 import os
+import cv2
+import matplotlib.pyplot as plt
+import io
+import Image
+from tools.test_dataset import prune_duplicate_boxes
 
 
 def get_data(img, depth):
-    if depth:
+    if not isinstance(depth, np.ndarray) and depth:
         if depth.encoding == '32FC1':
             depth = cv_bridge.imgmsg_to_cv2(depth) * 1000
             depth = np.array(depth, dtype=np.uint16)
@@ -33,7 +40,7 @@ def get_data(img, depth):
             rospy.logerr_throttle(1, 'Unsupported depth type. Expected 16UC1 or 32FC1, got {}'.format(depth.encoding))
 
     # image
-    if img:
+    if not isinstance(img, np.ndarray) and img:
         img = cv_bridge.imgmsg_to_cv2(img, 'bgr8')
     return img, depth
 
@@ -69,6 +76,8 @@ if __name__ == '__main__':
     meta_data = get_meta_data()
 
     bag_path = os.path.join(config_dict["bags_path"], config_dict["test_bag"] + ".bag")
+    visualize = True
+    record_video = False
 
     # ros bag
     bag = rosbag.Bag(bag_path)
@@ -87,12 +96,21 @@ if __name__ == '__main__':
 
     color_topic = config_dict["color_topic"]
     depth_topic = config_dict["depth_topic"]
+    if config_dict["bag_end_time"]:
+        try:
+            start_time = rospy.Time(config_dict["bag_start_time"])
+        except KeyError:
+            start_time = rospy.Time(bag.get_start_time())
+        end_time = rospy.Time(config_dict["bag_end_time"])
+    else:
+        try:
+            start_time, end_time, times = read_dataset_times(dataset_name, "generate_dataset/")
+        except IOError:
+            start_time = rospy.Time(bag.get_start_time())
+            end_time = rospy.Time(bag.get_end_time())
 
-    try:
-        start_time, end_time, times = read_dataset_times(dataset_name, "generate_dataset/")
-    except IOError:
-        start_time = rospy.Time(bag.get_start_time())
-        end_time = rospy.Time(bag.get_end_time())
+    if record_video:
+        out = cv2.VideoWriter('outside_asphalt.avi', cv2.VideoWriter_fourcc(*'XVID'), 20.0, (1920, 1440))
     for topic, msg, t in bag.read_messages(topics=[color_topic, depth_topic], start_time=start_time, end_time=end_time):
         if topic == color_topic:
             img = msg
@@ -109,14 +127,27 @@ if __name__ == '__main__':
                 start_time = timeit.default_timer()
                 queue_up_data(sess, im_blob, network, label_blob, vertex_target_blob, vertex_weight_blob, meta_data_blob, imdb._extents, imdb._points_all, imdb._symmetry,
                               pose_blob)
-                data, labels, probs, vertex_pred, rois, poses, losses_values = forward_pass(sess, network)
+                data, labels, probs, vertex_pred, rois, poses = forward_pass(sess, network)
+                rois, poses = prune_duplicate_boxes(rois, poses)
                 elapsed = timeit.default_timer() - start_time
-                if cfg.TEST.VISUALIZE:
+                print(elapsed)
+                if visualize:
                     vertmap = _extract_vertmap(labels, vertex_pred, imdb._extents, imdb.num_classes)
                     im_label = imdb.labels_to_image(data, labels)
                     poses_icp = []
                     vis_segmentations_vertmaps_detection(data, depth, im_label, imdb._class_colors, vertmap, labels, rois, poses, poses_icp, meta_data['intrinsic_matrix'],
-                                                         imdb.num_classes, imdb._classes, imdb._points_all)
+                                                         imdb.num_classes, imdb._classes, imdb._points_all, None)
+                    if record_video:
+                        buf = io.BytesIO()
+                        plt.savefig(buf, format='png', dpi=300)
+                        buf.seek(0)
+                        plt_img = Image.open(buf)
+                        plt_img = cv2.cvtColor(np.array(plt_img), cv2.COLOR_RGBA2BGR)
+                        out.write(np.array(plt_img))
+                        buf.close()
+                        plt.close("all")
+                    else:
+                        plt.show()
 
         count += 1
 

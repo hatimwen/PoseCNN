@@ -56,6 +56,7 @@ def get_dope_objects(src_path_prefix):
     try:
         json_f = open(src_path_prefix + ".json")
     except IOError:
+        print(src_path_prefix + ".json")
         return None
     try:
         dope_meta = json.load(json_f)

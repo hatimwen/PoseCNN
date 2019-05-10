@@ -43,9 +43,9 @@ def split_list(list_a, ratio, randomize=False):
 
 
 def main():
-    folder_path = "/home/satco/kaju/data/LOV/data"
     with open("config.yaml", "r") as config:
         config_dict = yaml.load(config)
+    folder_path = config_dict["data_folder"]
     folders = config_dict["datasets"]
 
     # Split data in 0.8/0.2 trainval and test and then split trainval into 0.8/0.2 train and val

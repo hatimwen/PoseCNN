@@ -305,7 +305,10 @@ class AveragedistanceOp<Eigen::GpuDevice, T> : public OpKernel {
     // loss
     int dim = 1;
     TensorShape output_shape;
-    TensorShapeUtils::MakeShape(&dim, 1, &output_shape);
+// SLoss
+//    TensorShapeUtils::MakeShape(&dim, 1, &output_shape);
+// SLoss modified
+    TensorShapeUtils::MakeShape(&batch_size, 1, &output_shape);
 
     // bottom diff
     TensorShape output_shape_diff = bottom_prediction.shape();

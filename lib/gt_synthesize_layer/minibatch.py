@@ -669,7 +669,11 @@ def _vis_minibatch(im_blob, im_depth_blob, depth_blob, label_blob, meta_data_blo
         im = im.astype(np.uint8)
         ax = fig.add_subplot(2, 3, 1)
         plt.imshow(im, cmap="jet")
-        ax.set_title('color') 
+        ax.set_title('input image')
+
+        ax2 = fig.add_subplot(2, 3, 2)
+        plt.imshow(im, cmap="jet")
+        ax2.set_title('projection of model points')
 
         # project the 3D box to image
         metadata = meta_data_blob[i, 0, 0, :]
@@ -720,9 +724,9 @@ def _vis_minibatch(im_blob, im_depth_blob, depth_blob, label_blob, meta_data_blo
             im_depth += cfg.PIXEL_MEANS
             im_depth = im_depth[:, :, (2, 1, 0)]
             im_depth = im_depth.astype(np.uint8)
-            ax = fig.add_subplot(2, 3, 2)
+            ax = fig.add_subplot(2, 3, 2, sharex=ax, sharey=ax)
             plt.imshow(im_depth, cmap="jet")
-            ax.set_title('depth') 
+            ax.set_title('depth')
 
         # show label
         label = label_blob[i, :, :]
@@ -736,23 +740,23 @@ def _vis_minibatch(im_blob, im_depth_blob, depth_blob, label_blob, meta_data_blo
             index = np.where(label == k)
             if cfg.TRAIN.VERTEX_REG_2D or cfg.TRAIN.VERTEX_REG_3D and len(index[0]) > 0 and k > 0:
                 center[index[0], index[1], :] = vertex_target[index[0], index[1], 3*k:3*k+3]
-        ax = fig.add_subplot(2, 3, 3)
-        ax.set_title('label') 
+        ax = fig.add_subplot(2, 3, 3, sharex=ax, sharey=ax)
+        ax.set_title('class labels')
         if cfg.TRAIN.VERTEX_REG_2D or cfg.TRAIN.VERTEX_REG_3D:
             plt.imshow(label, cmap="jet")
-            ax = fig.add_subplot(2, 3, 4)
+            ax = fig.add_subplot(2, 3, 4, sharex=ax, sharey=ax)
             plt.imshow(center[:,:,0], cmap="jet")
             if cfg.TRAIN.VERTEX_REG_2D:
-                ax.set_title('center x') 
+                ax.set_title('center x')
             else:
-                ax.set_title('vertex x') 
-            ax = fig.add_subplot(2, 3, 5)
+                ax.set_title('vertex x')
+            ax = fig.add_subplot(2, 3, 5, sharex=ax, sharey=ax)
             plt.imshow(center[:,:,1], cmap="jet")
             if cfg.TRAIN.VERTEX_REG_2D:
                 ax.set_title('center y')
             else:
                 ax.set_title('vertex y')
-            ax = fig.add_subplot(2, 3, 6)
+            ax = fig.add_subplot(2, 3, 6, sharex=ax, sharey=ax)
             plt.imshow(np.exp(center[:,:,2]), cmap="jet")
             if cfg.TRAIN.VERTEX_REG_2D:
                 ax.set_title('z')
