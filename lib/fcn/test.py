@@ -888,7 +888,7 @@ def plot_data(im_blob, im_depth, im_labels, colors, center_map, labels, rois, po
             plt.imshow(im_depth, cmap="jet")
             ax.set_title('input depth')
 
-        show class label
+        # show class label
         ax = fig.add_subplot(2, 3, 3, sharex=ax, sharey=ax)
         im_labels[im_labels == 3] = 150
         plt.imshow(im_labels, cmap="jet")

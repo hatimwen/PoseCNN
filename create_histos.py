@@ -24,7 +24,7 @@ def get_bp_data(bp, y_offset=0.0015, remove_box=False):
 
 
 def plot_vec(vec, sim):
-    titles = ["X", "Y", "Z"]
+    titles = ["X axis error", "Y axis error", "Z axis error"]
     # plt.subplots_adjust(left=0.04, bottom=0.04, right=0.96, top=0.92, wspace=0.12, hspace=0.2)
     plt.subplots_adjust(wspace=0.4)
     for i in range(3):
@@ -72,14 +72,14 @@ def distance(prefix, prefix2):
 def create_plot(a, b, total_boxes):
     plt.subplots_adjust(left=0.25, right=0.75, wspace=0.9)
     ax = plt.subplot(1, 2, 1)
-    ax.set_title("Position {}/{} detected".format(a.shape[0], total_boxes))
+    ax.set_title("Positional error")
     bp = plt.boxplot(a, showfliers=False)
     get_bp_data(bp)
     ax.set_ylabel("meters")
     ax.get_xaxis().set_visible(False)
 
     ax = plt.subplot(1, 2, 2)
-    ax.set_title("Sloss {}/{} detected".format(b.shape[0], total_boxes))
+    ax.set_title("mSLoss error")
     bp = plt.boxplot(b, showfliers=False)
     get_bp_data(bp, 0.0005)
     ax.set_ylabel("meters")
