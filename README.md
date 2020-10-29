@@ -23,121 +23,234 @@ If you find PoseCNN useful in your research, please consider citing:
         Year = {2018}
     }
 
-### Installation
+ 
+### Environment
 
-1. Install [TensorFlow](https://www.tensorflow.org/get_started/os_setup) version r1.8 from source, binaries won't work 
-because of ABI incompatibilities.
-      1. You need **exactly** r1.8, gcc 4.8.*(tested with 4.8.5, 6.3.* will not work) and bazel 0.10.0 even though bazel 0.9.0 is recommended
-       [here](https://www.tensorflow.org/install/source), see 
-       [following issue](https://github.com/tensorflow/tensorflow/issues/22475). Bazel 0.17.0 also does not work and
-       probably other Bazel versions don't work either so really use 0.10.0 
-      2. Make a virtualenv with and add these packages, otherwise tf can not be build by source: pip install mock keras Cython easydict transforms3d(the last two are needed for later to actually run the demo)
-
-2. Download the VGG16 weights from [here](https://drive.google.com/open?id=1UdmOKrr9t4IetMubX-y-Pcn7AVaWJ2bL) (528M). Put the weight file vgg16.npy to $ROOT/data/imagenet_models.
-
-3. Get dependencies: sudo apt-get install libsuitesparse-dev openexr libopenexr-dev metis libmetis-dev
-
-4. Compile lib/kinect_fusion to be able to compile lib/synthesize. 
-    1. Add nanoflann to the include dirs in cmake and sohpus to the include and link dirs
-    2. Comment /usr/local/cuda/include/crt/common_functions.h line 64: see [this issue](https://github.com/BVLC/caffe/issues/5994) 
-    4. If Pangolin is already installed, reinstall Pangolin, since it will be pointing at the old eigen which has the cuda bug mentioned here: https://devtalk.nvidia.com/default/topic/1026622/cuda-programming-and-performance/nvcc-can-t-compile-code-that-uses-eigen/
-    
-5. Compile lib/synthesize with cmake. This package contains a few useful tools such as generating synthetic images for training and ICP.
-
-   Install dependencies with **exactly** these commits. I tried other commits and they all broke/did not build:
-   - Python version 2.7, 3.X won't work
-   - [Pangolin](https://github.com/stevenlovegrove/Pangolin) commit 1ec721d59ff6b799b9c24b8817f3b7ad2c929b83 worked for me, original author used c2a6ef524401945b493f14f8b5b8aa76cc7d71a9
-   - [Eigen](https://eigen.tuxfamily.org) 3. * . * (tested with 3.3.0 and 3.2.92)
-   - [boost](https://www.boost.org/) 1.67.0
-   - [Sophus](https://github.com/strasdat/Sophus) commit ceb6380a1584b300e687feeeea8799353d48859f
-   - [nanoflann](https://github.com/jlblancoc/nanoflann) commit ad7547f4e6beb1cdb3e360912fd2e352ef959465
-   - [nlopt](https://github.com/stevengj/nlopt) Important install from this github repo, not using the instructions [here](https://nlopt.readthedocs.io/en/latest/) commit 74e647b667f7c4500cdb4f37653e59c29deb9ee2
-   
-   We use Boost.Python library to link tensorflow with the c++ code. Make sure you have it in your Boost. The tested Boost version is 1.66.0.
-
-   1. Change hard coded pathes in lib/synthesize/CMakeLists.txt of boost and add sophus paths manually or via find_script. Uncomment line #add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0) to fix potential compatibility issues with tf.
-   2. Uncomment ${CUDA_TOOLKIT_ROOT_DIR}/samples/common/inc from include dirs because of this issue: https://github.com/stevenlovegrove/Pangolin/issues/268
-   3. Surpress these warnings so you see errors better.
-   ```add_definitions(-Wno-sign-compare)
-      add_definitions(-Wno-unused-result)
-      add_definitions(-Wno-unused-but-set-variable)
-      add_definitions(-Wno-unused-variable)
-      add_definitions(-Wno-reorder)
-      add_definitions(-Wno-deprecated-declarations)
-   ```
-   4. Make GlBuffer(const GlBuffer&) {} public in file /usr/local/include/pangolin/gl/gl.h by commenting line 209.
-   Same goes for line 116
-   5. Adapt boost_python and boost_numpy in Cmake line 98/99 to your library name when using boost and python 3.5 it is boost_python27 and boost_numpy27 or symlink these to boots_python and boost_numpy.
-   6. Create folder data and models under data/LOV and add or symlink the data and models into there
-   
-6. Uncomment line 64 in /usr/local/cuda/include/crt/common_functions.h 
-7. Download [the sun2012 dataset][1]. Unzip the contents of it into the folder PoseCNN/data/Sun2012/data. 
-8. Download ObjectNet3D from ftp://cs.stanford.edu/cs/cvgl/ObjectNet3D/ObjectNet3D_images.zip. Unzip the contents of it into the folder PoseCNN/data/ObjectNet3D/data.
-For why the link is written out see [here](https://github.com/eedeebee/github-markdown-ftp-bug) and bug github about that bug ;)
-
-[1]: https://groups.csail.mit.edu/vision/SUN/releases/SUN2012.tar.gz
-
-### Notes on ABI Compatibility
-Either all packages used need to be built with gcc 4.8.5 or if some use gcc 5 or above all above packages need following 
-line added to the compilation: -D_GLIBCXX_USE_CXX11_ABI=0  
-ABI Compatibility issues will manifest themselves through the message "some_lib.so": undefined symbol: "some obfuscated coed snippet".
-The easiest to get this whole project to compile is to compile every package with the same gcc version. But take care, because
-per default opencv will be compiled with gcc 5.4 and will get included in various binaries. Check and make sure you link
-against your custom built binaries using `ldd your_binary.so`. To give you the above error already at compile time instead of runtime
-add following to the compile command: `-Wl,-z,defs`. 
-   
-### Building
-   Warning nothing can be built in parallel, don't do make -jX just use make
-   1. Build kinect_fusion
-   
-    ```Shell
-    cd $ROOT/lib/kinect_fusion
-    mkdir build
-    cd build
-    cmake ..
-    make
-    ```
-   2. Build synthesize
-   
-    ```Shell
-    cd $ROOT/lib/synthesize
-    mkdir build
-    cd build
-    cmake ..
-    make
-    ```
-   3. Compile the new layers under $ROOT/lib we introduce in PoseCNN.
-    ```Shell
-    cd $ROOT/lib
-    sh make.sh
-    ```
-   
-   4. run python setup ```python setup.py build_ext --inplace```
-   
-   5. Add pythonpaths
-
-    Add the path of the built libary libsynthesizer.so to python path
-    ```Shell
-    export PYTHONPATH=$PYTHONPATH:$ROOT/lib:$ROOT/lib/synthesize/build
-    ```
-
-### Required environment
+本人系统环境：
 - Ubuntu 16.04
-- Tensorflow >= 1.2.0
-- CUDA >= 8.0
+- Tensorflow 1.8（from source）
+- Python 2.7
+- Cuda 10.0 & cuddn 7.3.1
+
+### Setting
+
+***
+#### <center> 1.搭建虚拟环境 </center>
+第一步，创建专属于PoseCNN的虚拟环境，之后install的包都在此虚拟环境中。
+虚拟环境的好处不用多说了吧，反正对Ubuntu系统的折腾越少越好！！！
+我用 conda 创建的环境：
+- <code> conda create -n posecnn python=2.7 </code>
+激活环境：
+- <code> conda activate posecnn </code>
+如果不用这个环境，记得deactivate：
+- <code> conda deactivate posecnn </code>
+
+***
+#### <center> 2.pip install </center>
+- <code> pip install opencv-python </code>
+
+如果不行试一下：<code> sudo apt-get install libopencv-dev </code>
+
+- <code> pip install mock enum34</code>
+- <code> pip install matplotlib numpy keras Cython Pillow easydict transforms3d </code>
+- <code> pip install OpenEXR </code>
+- <code> sudo apt-get install libsuitesparse-dev libopenexr-dev metis libmetis-dev </code>
+
+***
+#### <center> 3.TensorFlow </center>
+注意一定要从源码安装，虽然很繁琐，但是经过实践证明，pip install安装出来的TensorFlow不好用。。
+此外，使用gcc 4.8和g++ 4.8对后续的依赖包进行编译。
+> 
+> - <code> sudo apt-get install gcc-4.8 </code>
+> - <code> sudo apt-get install g++-4.8 </code>
+> - <code> sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 10 </code>
+> - <code> sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 30 </code>
+> - <code> sudo update-alternatives --config gcc </code> 输入选择 1
+> 
+> - <code> sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 10 </code>
+> - <code> sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 30 </code>
+> - <code> sudo update-alternatives --config g++ </code> 输入选择 1
+> 
+> 测试一下gcc和g++的版本，显示4.8就更换完毕了:
+> 
+> - <code> gcc --version </code>
+> 
+> - <code> g++ --version </code>
+
+接下来安装bazel，并选择0.10.0版本，本文选择下载sh文件进行安装，
+> 下载地址：[https://github.com/bazelbuild/bazel/releases/download/0.10.0/bazel-0.10.0-installer-linux-x86_64.sh](https://github.com/bazelbuild/bazel/releases/download/0.10.0/bazel-0.10.0-installer-linux-x86_64.sh)
+> 下载好之后，安装：
+> - <code> chmod +x bazel-0.10.0-installer-linux-x86_64.sh </code> 修改文件权限
+> - <code> ./bazel-0.10.0-installer-linux-x86_64.sh --user </code> 进行安装
+> 接着添加环境变量：
+> - <code> gedit ~/.bashrc </code>
+> - <code> export PATH="\$PATH:\$HOME/bin" </code>
+
+下面下载安装TensorFlow：
+> - `git clone https://github.com/tensorflow/tensorflow.git`
+> - `cd tensorflow`
+> - `git checkout r1.8`
+> - `./configure`
+> 这一步，配置文件会问很多问题，对应回答y/n即可:
+> 
+>> 注意 Python 及其sitepackage的路径要与你之后环境路径相对应
+>> 比如我在posecnn虚拟环境中运行的话，我的python路径就是 .../.conda/env/posecnn/bin/python
+> 大部分都选择n，但是询问cuda时，要根据你的电脑实际选择
+> 
+> 然后编译源文件：
+> - `bazel build --config=opt --config=cuda //tensorflow/tools/pip_package:build_pip_package`
+> 生成安装包：
+> - `bazel-bin/tensorflow/tools/pip_package/build_pip_package  ~/software/tensorflow`
+> 最后安装：
+> - `pip install /tmp/tensorflow_pkg/tensorflow-1.8.0-cp27-cp27mu-linux_x86_64.whl`
+> 至此，TensorFlow的源码安装大功告成，可以import测试一下。
+
+***
+#### <center> 4.Eigen </center>
+
+```
+wget https://bitbucket.org/eigen/eigen/get/3.3.0.zip
+# 提取解压压缩包
+# 重命名文件夹为eigen
+cd eigen
+mkdir build && cd build
+cmake ..
+make
+sudo make install
+```
+***
+#### <center> 5.Nanoflann </center>
+
+```
+wget https://github.com/jlblancoc/nanoflann/archive/ad7547f4e6beb1cdb3e360912fd2e352ef959465.zip
+# 提取解压压缩包
+# 重命名文件夹为nanoflann
+sudo apt-get install build-essential cmake libgtest-dev
+cd nanoflann
+mkdir build && cd build && cmake ..
+make && make test
+sudo make install
+```
+***
+#### <center> 6.Pangolin </center>
+
+```
+wget https://github.com/stevenlovegrove/Pangolin/archive/1ec721d59ff6b799b9c24b8817f3b7ad2c929b83.zip
+# 提取解压压缩包
+# 重命名文件夹为Pangolin
+cd Pangolin
+# Add folowing line to the CMakeLists.txt:
+# add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
+mkdir build
+cd build
+cmake ..
+cmake --build .
+```
+***
+#### <center> 7.Boost </center>
+
+```
+wget https://dl.bintray.com/boostorg/release/1.67.0/source/boost_1_67_0.tar.bz2
+# 提取解压压缩包
+# 重命名文件夹为boost
+cd boost
+./bootstrap.sh
+sudo ./b2
+sudo ./b2 install
+```
+***
+#### <center> 8.Sophus </center>
+
+```
+wget https://github.com/strasdat/Sophus/archive/ceb6380a1584b300e687feeeea8799353d48859f.zip
+# 提取解压压缩包
+# 重命名文件夹为Sophus
+cd Sophus
+mkdir build && cd build
+cmake ..
+make
+sudo make install
+```
+***
+#### <center> 9.NLOPT </center>
+
+```
+wget https://github.com/stevengj/nlopt/archive/74e647b667f7c4500cdb4f37653e59c29deb9ee2.zip
+# 提取解压压缩包
+# 重命名文件夹为nlopt
+cd nlopt
+mkdir build
+cd build
+cmake ..
+make
+sudo make install
+```
+至此，所有依赖包配置完毕，下面针对源代码进行编译运行。
+***
+#### <center> 10.Compile lib/kinect_fusion </center>
+先注释掉/usr/local/cuda/include/crt/common_functions.h的第75行
+ ` #define __CUDACC_VER__ "__CUDACC_VER__ is no longer supported.  Use __CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__, and __CUDACC_VER_BUILD__ instead." `
+因为这个[issue](https://github.com/BVLC/caffe/issues/5994)
+要是只读权限无法修改，就用`sudo chmod 777 /usr/local/cuda/include/crt/common_functions.h`修改一下权限。
+```
+cd kinect_fusion
+mkdir build
+cd build
+cmake ..
+make
+```
+编译完记得取消注释刚刚的common_functions.h第75行
+***
+#### <center> 11.Compile lib/synthesize </center>
+
+```
+cd ..
+cd ..
+cd synthesize
+mkdir build
+cd build
+cmake ..
+make
+```
+Compile the new layers under \$ROOT/lib we introduce in PoseCNN. 
+**（注意下面的\$ROOT要换成你实际的PoseCNN代码路径！！！）**
+```
+cd $ROOT/lib
+sh make.sh
+```
+
+- run python setup: `python setup.py build_ext --inplace`
+
+- Add pythonpaths
+
+- Add the path of the built libary libsynthesizer.so to python path
+```Shell
+export PYTHONPATH=$PYTHONPATH:$ROOT/lib:$ROOT/lib/synthesize/build
+```
+
+***
+#### <center> 12.下载数据集 </center>
+- 下载[YCB-Video数据集](https://pan.baidu.com/s/1FG7_wrNbBdFcJmh1UxuDFg)，提取码52xx，解压生成：PoseCNN/data/YCB
+- 下载[SUN2012数据集](https://groups.csail.mit.edu/vision/SUN/releases/SUN2012.tar.gz),解压生成：PoseCNN/data/SUN2012/data
+- 下载[ObjectNet3D数据集](ftp://cs.stanford.edu/cs/cvgl/ObjectNet3D/ObjectNet3D_images.zip),解压生成：PoseCNN/data/ObjectNet3D/data
+
+至此，环境配置完毕。接下来直接贴出原作者步骤：
 
 ### Running the demo
 1. Download our trained model on the YCB-Video dataset from [here](https://drive.google.com/file/d/1UNJ56Za6--bHGgD3lbteZtXLC2E-liWz/view?usp=sharing), and save it to $ROOT/data/demo_models.
 
 2. run the following script
     ```Shell
-    ./experiments/scripts/demo.sh $GPU_ID
+    ./experiments/scripts/demo.sh # 默认用0号GPU运行!
+    # 或者
+    ./experiments/scripts/demo.sh --gpuid 1 # 指定1号（也可以选择你喜欢的GPU）运行空格很重要!
     ```
 
 ### Running on the YCB-Video dataset
-1. Download the YCB-Video dataset from [here](https://rse-lab.cs.washington.edu/projects/posecnn/).
+1. Download the YCB-Video dataset from [here](https://rse-lab.cs.washington.edu/projects/posecnn/).数据集上一步已经下好了，这一步不用管~
 
 2. Create a symlink for the YCB-Video dataset (the name LOV is due to legacy, Learning Objects from Videos)
+建立软连接，让代码知道你数据集放哪了。
     ```Shell
     cd $ROOT/data/LOV
     ln -s $ycb_data data
@@ -155,3 +268,14 @@ add following to the compile command: `-Wl,-z,defs`.
     ./experiments/scripts/lov_color_2d_test.sh $GPU_ID
 
     ```
+
+更多可以看下面的参考链接，很详细。更多多的希望通读代码！通读代码！通读代码！
+
+----------
+参考：
+- [PoseCNN RSE-Lab](https://rse-lab.cs.washington.edu/projects/posecnn/)，RSE-Lab
+- [PoseCNN GitHub代码](https://github.com/yuxng/PoseCNN)，yuxng
+- [YCB-Video数据集下载](https://pan.baidu.com/s/1FG7_wrNbBdFcJmh1UxuDFg)，提取码52xx，wangg12
+- [PoseCNN代码实现大纲](https://github.com/Kaju-Bubanja/PoseCNN)，Kaju-Bubanja
+- [PoseCNN代码实现详细](https://github.com/yuxng/PoseCNN/issues/76#issuecomment-452700651)，Luedeke
+- [《论文笔记——PoseCNN》](https://blog.csdn.net/nwu_NBL/java/article/details/83176353)，XJTU_Bugdragon
